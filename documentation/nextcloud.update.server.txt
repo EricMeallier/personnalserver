@@ -4,7 +4,7 @@ NEW_VERSION=`{ curl -sL https://github.com/nextcloud/server/releases ; curl -sL 
 echo "Upgrade from $OLD_VERSION to $NEW_VERSION"
 
 cd /opt/nextcloud-${OLD_VERSION}
-sudo -u nobody php8.3 occ maintenance:mode --on
+sudo -u nobody php8.4 occ maintenance:mode --on
 
 cd /opt
 # remove current link version
@@ -32,24 +32,23 @@ sudo cp -a nextcloud-${OLD_VERSION}/apps/drawio nextcloud/apps
 sudo cp -a nextcloud-${OLD_VERSION}/apps/whiteboard nextcloud/apps
 sudo cp -a nextcloud-${OLD_VERSION}/apps/forms nextcloud/apps
 sudo cp -a nextcloud-${OLD_VERSION}/apps/calendar nextcloud/apps
-sudo cp -a nextcloud-${OLD_VERSION}/apps/deck nextcloud/apps
 sudo cp -a nextcloud-${OLD_VERSION}/apps/richdocuments nextcloud/apps
 
 # restart services
 sudo systemctl restart nginx
-sudo systemctl restart php8.3-fpm
+sudo systemctl restart php8.4-fpm
 
 # upgrade to version
 cd /opt/nextcloud
-sudo -u nobody php8.3 occ upgrade
+sudo -u nobody php8.4 occ upgrade
 
 # disable maintenance mode
-sudo -u nobody php8.3 occ maintenance:mode --off
+sudo -u nobody php8.4 occ maintenance:mode --off
 
 # check missing indexes in db (without maintenance mode to include apps)
-sudo -u nobody php8.3 occ db:add-missing-indices
-sudo -u nobody php8.3 occ db:add-missing-primary-keys
-sudo -u nobody php8.3 occ db:add-missing-columns
+sudo -u nobody php8.4 occ db:add-missing-indices
+sudo -u nobody php8.4 occ db:add-missing-primary-keys
+sudo -u nobody php8.4 occ db:add-missing-columns
 
 # sweep old versions
 cd /opt

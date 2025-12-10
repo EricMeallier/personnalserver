@@ -1,7 +1,15 @@
 ---
 
+- name: install postgresql installation pre requisites
+  apt: 
+    name:
+    - apt-transport-https
+    - curl
+    - ca-certificates
+
 - name: install postgresql server
   apt: 
     name:
     - postgresql-{{ postgresql.version }}
     state: present
+    update_cache: yes

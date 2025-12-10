@@ -6,37 +6,37 @@
     state: stopped
   loop:
   - 'nginx.service'
-  - 'gogs'
+  - 'gitea'
   loop_control:
     loop_var: service_name
   ignore_errors: True
 
-- name: Restore database Gogs
+- name: Restore database gitea
   include_role:
     name : pg_restore_database
   vars:
-    pg_filename: 'gogs-last.dmp'
-    pg_username: '{{ dbschema.gogs.username }}'
-    pg_database: '{{ dbschema.gogs.database }}'
+    pg_filename: 'gitea-last.dmp'
+    pg_username: '{{ dbschema.gitea.username }}'
+    pg_database: '{{ dbschema.gitea.database }}'
 
-- name: Restore files from pcloud Gogs
+- name: Restore files from pcloud gitea
   include_role:
     name : pcloud_restore_file
   vars:
-    foldername: '/data/gogs-repositories'
-    filename: 'gogs-last-data.tar'
+    foldername: '/data/gitea'
+    filename: 'gitea-last-data.tar'
 
-- name: Uncompress data Gogs
+- name: Uncompress data gitea
   unarchive:
-    src: '/data/gogs-repositories/gogs-last-data.tar'
+    src: '/data/gitea/gitea-last-data.tar'
     dest: '/'
     remote_src: 'yes'
-    owner: gogs
-    group: gogs
+    owner: gitea
+    group: gitea
 
-- name: Remove old archive Gogs
+- name: Remove old archive gitea
   file:
-    path: '/data/gogs-repositories/gogs-last-data.tar'
+    path: '/data/gitea/gitea-last-data.tar'
     state: 'absent'
 
 - name: Restart applications
@@ -44,7 +44,7 @@
     name: '{{ service_name }}'
     state: started
   loop:
-  - 'gogs'
+  - 'gitea'
   - 'nginx.service'
   loop_control:
     loop_var: service_name

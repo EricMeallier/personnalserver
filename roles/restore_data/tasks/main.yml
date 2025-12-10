@@ -5,7 +5,11 @@
     file : '{{app_name}}'
   loop:
     - restore_redmine.yml
-    - restore_gogs.yml
     - restore_nextcloud.yml
+    - restore_gitea.yml
+    - restore_gogs.yml
+    - restore_redis.yml
+    - restore_etherpad.yml
+    - restore_spliit.yml
   loop_control:
     loop_var: app_name

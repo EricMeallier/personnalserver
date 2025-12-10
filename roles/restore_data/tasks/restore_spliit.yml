@@ -1,0 +1,29 @@
+---
+
+- name: Stop applications
+  systemd:
+    name: '{{ service_name }}'
+    state: stopped
+  loop:
+  - 'spliit'
+  loop_control:
+    loop_var: service_name
+  ignore_errors: True
+
+- name: Restore database spliit
+  include_role:
+    name : pg_restore_database
+  vars:
+    pg_filename: 'spliit-last.dmp'
+    pg_username: '{{ dbschema.spliit.username }}'
+    pg_database: '{{ dbschema.spliit.database }}'
+
+- name: Restart applications
+  systemd:
+    name: '{{ service_name }}'
+    state: started
+  loop:
+  - 'spliit'
+  loop_control:
+    loop_var: service_name
+
