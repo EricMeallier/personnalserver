@@ -8,7 +8,7 @@ auth=$(curl -s "https://eapi.pcloud.com/userinfo?getauth=1&username={{ pcloud.us
 
 systemctl stop nginx
 systemctl stop etherpad ethercalc
-systemctl stop gogs gitea
+systemctl stop gogs gitea spliit
 systemctl stop php{{ php.version }}-fpm.service
 
 ##########################################################
@@ -51,7 +51,7 @@ systemctl restart postgresql
 ##########################################################
 # Redis databases backup
 
-systemctl stop redis-server ethercalc
+systemctl stop redis-server
 cp /var/lib/redis/dump.rdb ${targetDir}/redis-${timestamp=}.rdb
 gzip -f ${targetDir}/redis-${timestamp=}.rdb
 systemctl start redis-server ethercalc
@@ -67,17 +67,17 @@ systemctl start nginx
 curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/redmine-${timestamp=}-files.tar.gz
 rm -f ${targetDir}/redmine-${timestamp=}-files.tar.gz
 
-## gogs
-tar zcvf ${targetDir}/gogs-${timestamp=}-data.tar.gz /data/gogs-repositories
-systemctl start gogs
-curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/gogs-${timestamp=}-data.tar.gz
-rm -f ${targetDir}/gogs-${timestamp=}-data.tar.gz
-
 ## gitea
 tar zcvf ${targetDir}/gitea-${timestamp=}-data.tar.gz /data/gitea
 systemctl start gitea
 curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/gitea-${timestamp=}-data.tar.gz
 rm -f ${targetDir}/gitea-${timestamp=}-data.tar.gz
+
+## gogs
+tar zcvf ${targetDir}/gogs-${timestamp=}-data.tar.gz /data/gogs-repositories
+systemctl start gogs
+curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/gogs-${timestamp=}-data.tar.gz
+rm -f ${targetDir}/gogs-${timestamp=}-data.tar.gz
 
 # nextcloud
 GZIP=-9; tar zcvf ${targetDir}/nextcloud-${timestamp=}-data.tar.gz --exclude={"nextcloud.log*"} /data/nextcloud
@@ -85,12 +85,3 @@ systemctl start php{{ php.version }}-fpm.service
 systemctl restart nginx
 curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/nextcloud-${timestamp=}-data.tar.gz
 rm -f ${targetDir}/nextcloud-${timestamp=}-data.tar.gz
-
-
-
-
-
-
-
-
-
