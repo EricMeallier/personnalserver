@@ -4,7 +4,7 @@ package:
   gems:
     passenger: 6.1.1
     pg: 1.5.9
-  version: 6.1.0
+  version: 6.1.1
   checksum: 
-    sha256: bc483da195f2444491d870e40f7fc909ae750f7ba8d0e28831e6d6c478812b88
+    sha256: 1f2e6dd0697062fc733701f88b5041dc0dfc6b536255eb7902f21fb0970e603e
   type: tar.gz

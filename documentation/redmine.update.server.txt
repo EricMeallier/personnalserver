@@ -1,3 +1,6 @@
+# Not working anymore !
+
+
 sudo su -
 
 OLD=`ls -l /opt/redmine | sed -e 's/.*redmine-\(.*\)/\1/'`
@@ -12,7 +15,7 @@ tar zxvf redmine-${NEW}.tar.gz
 ln -s /opt/redmine-${NEW} /opt/redmine
 
 cd /opt/redmine
-export PATH=/usr/local/rvm/rubies/ruby-3.3.9/bin:/usr/local/rvm/gems/ruby-3.3.9/bin:/usr/local/rvm/gems/ruby-3.3.9@global/bin:$PATH
+export PATH=/usr/local/rvm/rubies/ruby-3.3.10/bin:/usr/local/rvm/gems/ruby-3.3.10/bin:/usr/local/rvm/gems/ruby-3.3.10@global/bin:$PATH
 
 export CONFIGURE_ARGS="with-pg-include=/usr/include/postgresql";gem install pg -v '1.5.9'
 
