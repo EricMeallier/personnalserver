@@ -9,21 +9,21 @@
             <port>993</port>
             <socketType>SSL</socketType>
             <username>%EMAILADDRESS%</username>
-            <authentication>password-encrypted</authentication>
+            <authentication>password-cleartext</authentication>
         </incomingServer>
         <incomingServer type="pop3">
             <hostname>mail.infomaniak.com</hostname>
             <port>995</port>
             <socketType>SSL</socketType>
             <username>%EMAILADDRESS%</username>
-            <authentication>password-encrypted</authentication>
+            <authentication>password-cleartext</authentication>
         </incomingServer>
         <outgoingServer type="smtp">
             <hostname>mail.infomaniak.com</hostname>
             <port>465</port>
             <socketType>SSL</socketType>
             <username>%EMAILADDRESS%</username>
-            <authentication>password-encrypted</authentication>
+            <authentication>password-cleartext</authentication>
         </outgoingServer>
     </emailProvider>
 </clientConfig>
