@@ -30,6 +30,9 @@ sudo cp -a nextcloud-${OLD_VERSION}/apps/contacts nextcloud/apps
 sudo cp -a nextcloud-${OLD_VERSION}/apps/tasks nextcloud/apps
 sudo cp -a nextcloud-${OLD_VERSION}/apps/drawio nextcloud/apps
 sudo cp -a nextcloud-${OLD_VERSION}/apps/whiteboard nextcloud/apps
+sudo cp -a nextcloud-${OLD_VERSION}/apps/forms nextcloud/apps
+sudo cp -a nextcloud-${OLD_VERSION}/apps/calendar nextcloud/apps
+sudo cp -a nextcloud-${OLD_VERSION}/apps/deck nextcloud/apps
 
 # restart services
 sudo systemctl restart nginx
