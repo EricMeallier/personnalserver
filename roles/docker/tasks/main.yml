@@ -1,0 +1,27 @@
+---
+
+- name: install docker pre requisites
+  apt: 
+    name:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg
+    state: present
+
+- name: install docker repository key
+  shell: 'curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/docker.gpg'
+
+- name: install docker repository
+  shell: 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list'
+
+- name: install docker packages
+  apt: 
+    name:
+    - 'docker-ce'
+    - 'docker-ce-cli'
+    - 'containerd.io'
+    - 'docker-buildx-plugin'
+    - 'docker-compose-plugin'
+    state: 'latest'
+    update_cache: yes

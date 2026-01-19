@@ -1,0 +1,12 @@
+[Unit]
+Description=Drawio
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker run --rm --name drawio --net=host -p 8080:8080 fjudith/draw.io
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
