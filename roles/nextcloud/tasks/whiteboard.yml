@@ -55,6 +55,7 @@
   shell: 
     cmd: 'sudo -u nobody php{{ php.version }} occ app:install whiteboard'
     chdir: '/opt/nextcloud-{{package.version}}'
+  ignore_errors: true
 
 - name: Enable whiteboard nextcloud application
   shell: 
