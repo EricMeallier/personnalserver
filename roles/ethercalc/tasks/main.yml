@@ -8,12 +8,6 @@
     targetIP: '{{ansible_default_ipv4.address}}'
   when: not redmine_unsecured
 
-- name: install ethercalc pre requisites
-  apt: 
-    name:
-    - redis
-    state: present
-
 - name: Ensure group "ethercalc" exists
   group:
     name: ethercalc

@@ -8,12 +8,6 @@
     targetIP: '{{ansible_default_ipv4.address}}'
   when: not redmine_unsecured
 
-- name: install nextcloud installation pre requisites
-  apt: 
-    name:
-    - redis
-    state: present
-
 - name: Is already installed ?
   stat:
     path: "/opt/nextcloud/config/config.php"
