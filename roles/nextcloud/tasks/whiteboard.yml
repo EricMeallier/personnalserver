@@ -29,7 +29,19 @@
   get_url:
     url: https://github.com/nextcloud/whiteboard/archive/refs/tags/v{{package.whiteboard.version}}.zip
     dest: '/tmp/whiteboard-{{package.whiteboard.version}}.zip'
- 
+
+- name: Find old version of whiteboard
+  find:
+    paths: /opt
+    patterns: "whiteboard-*"
+  register: find_results
+
+- name: remove old versions
+  file:
+    path: "{{ item['path'] }}"
+    state: absent
+  with_items: "{{ find_results['files'] }}"
+
 - name: Extract whiteboard files into /opt
   unarchive:
     src: '/tmp/whiteboard-{{package.whiteboard.version}}.zip'
