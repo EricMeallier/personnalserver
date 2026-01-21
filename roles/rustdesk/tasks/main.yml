@@ -30,15 +30,15 @@
 
 - name: Delayed rustdesk startup (hbbr)
   lineinfile:
-    dest: /lib/systemd/system/rustdesk-hbbr.service
-    insertafter: '[Service]'
+    path: /lib/systemd/system/rustdesk-hbbr.service
+    insertafter: '^\[Service\]\n'
     regexp: 'ExecStartPre=.*'
     line: 'ExecStartPre=/bin/sleep 15'
 
 - name: Delayed rustdesk startup (hbbs)
   lineinfile:
-    dest: /lib/systemd/system/rustdesk-hbbs.service
-    insertafter: '[Service]'
+    path: /lib/systemd/system/rustdesk-hbbs.service
+    insertafter: '^\[Service\]\n'
     regexp: 'ExecStartPre=.*'
     line: 'ExecStartPre=/bin/sleep 15'
 
@@ -74,6 +74,30 @@
     rule: 'allow'
     proto: 'udp'
     port: '21116'
+
+- name: Deploy public key
+  copy:
+    content: '{{ rustdesk.key.public }}'
+    dest: '/var/lib/rustdesk-server/id_ed25519.pub'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy private key
+  copy:
+    content: '{{ rustdesk.key.private }}'
+    dest: '/var/lib/rustdesk-server/id_ed25519'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: rustdesk services restart
+  systemd:
+    name: '{{ item }}'
+    state: restarted
+  loop:
+  - rustdesk-hbbr
+  - rustdesk-hbbs
 
 - name: Slurp hosts key
   slurp:
