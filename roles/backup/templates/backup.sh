@@ -90,8 +90,9 @@ curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud
 rm -f ${targetDir}/gogs-${timestamp=}-data.tar.gz
 
 # nextcloud
-GZIP=-9; tar zcvf ${targetDir}/nextcloud-${timestamp=}-data.tar.gz --exclude={"nextcloud.log*"} /data/nextcloud
+tar cvf ${targetDir}/nextcloud-${timestamp=}-data.tar /data/nextcloud
 systemctl start php{{ php.version }}-fpm.service
 systemctl restart nginx
+gzip -9 ${targetDir}/nextcloud-${timestamp=}-data.tar
 curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/nextcloud-${timestamp=}-data.tar.gz
 rm -f ${targetDir}/nextcloud-${timestamp=}-data.tar.gz
