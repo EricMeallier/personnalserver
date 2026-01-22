@@ -55,7 +55,7 @@
 - name: Configure php FPM to set the interned_strings_buffer
   lineinfile:
     dest: '/etc/php/{{ php.version }}/fpm/php.ini'
-    insertafter: '[opcache]'
+    insertafter: '^\[opcache\]'
     regexp: '^opcache.interned_strings_buffer=.*$'
     line: 'opcache.interned_strings_buffer=16'
 

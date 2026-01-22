@@ -94,7 +94,7 @@
 - name: add mjs extension to javascript files
   lineinfile:
     dest: /opt/nginx/conf/mime.types
-    insertafter: '[Service]'
+    insertafter: '^\[Service\]'
     regexp: '    application/javascript.*'
     line: '    application/javascript                           js mjs;'
   when: not nginx_exists.stat.exists
