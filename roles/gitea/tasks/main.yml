@@ -74,6 +74,9 @@
     remote_src: true
     src: '/opt/gitea/gitea.ini'
     dest: '/opt/gitea.ini'
+    owner: gitea
+    group: gitea
+    mode: '0600'
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Make it executable
@@ -108,7 +111,7 @@
     dest: /opt/gitea/gitea.ini
     owner: gitea
     group: gitea
-    mode: '0644'
+    mode: '0600'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
   
 - name: Install gitea service script
