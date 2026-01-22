@@ -59,7 +59,7 @@ curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud
 rm -f ${targetDir}/redis-${timestamp=}.rdb.gz
 
 ##########################################################
-# Kuma Sqllite databases backup
+# Kuma Sqlite databases backup
 
 systemctl stop kuma
 cp /opt/uptime-kuma/data/kuma.db ${targetDir}/kuma-${timestamp=}.db

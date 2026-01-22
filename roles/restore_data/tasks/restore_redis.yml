@@ -15,7 +15,7 @@
   include_role:
     name : pcloud_restore_file
   vars:
-    foldername: '/data/'
+    foldername: '/data'
     filename: 'redis-last.rdb'
 
 - name: Restore data to redis database
