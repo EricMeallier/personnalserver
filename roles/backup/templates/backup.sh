@@ -59,6 +59,16 @@ curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud
 rm -f ${targetDir}/redis-${timestamp=}.rdb.gz
 
 ##########################################################
+# Kuma Sqllite databases backup
+
+systemctl stop kuma
+cp /opt/uptime-kuma/data/kuma.db ${targetDir}/kuma-${timestamp=}.db
+systemctl start kuma
+gzip -f ${targetDir}/kuma-${timestamp=}.db
+curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/kuma-${timestamp=}.db.gz
+rm -f ${targetDir}/kuma-${timestamp=}.db.gz
+
+##########################################################
 # Application backups
 
 # redmine

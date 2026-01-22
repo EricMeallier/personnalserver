@@ -11,5 +11,6 @@
     - restore_redis.yml
     - restore_etherpad.yml
     - restore_spliit.yml
+    - restore_kuma.yml
   loop_control:
     loop_var: app_name

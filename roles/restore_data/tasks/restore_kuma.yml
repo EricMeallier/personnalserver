@@ -1,0 +1,36 @@
+---
+
+- name: Stop applications
+  systemd:
+    name: '{{ service_name }}'
+    state: stopped
+  loop:
+  - 'kuma.service'
+  loop_control:
+    loop_var: service_name
+  ignore_errors: True
+
+- name: Restore files from pcloud kuma
+  include_role:
+    name : pcloud_restore_file
+  vars:
+    foldername: '/data/'
+    filename: 'kuma-last.db'
+
+- name: Restore data to kuma database
+  shell: mv /data/kuma-last.db /opt/uptime-kuma/data/kuma.db
+
+- name: Remove old archive kuma
+  file:
+    path: '/data/kuma-last.db'
+    state: 'absent'
+
+- name: Restart applications
+  systemd:
+    name: '{{ service_name }}'
+    state: started
+  loop:
+  - 'kuma'
+  loop_control:
+    loop_var: service_name
+
