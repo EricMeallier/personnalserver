@@ -20,10 +20,8 @@
 - name: Restore data to kuma database
   shell: mv /data/kuma-last.db /opt/uptime-kuma/data/kuma.db
 
-- name: Remove old archive kuma
-  file:
-    path: '/data/kuma-last.db'
-    state: 'absent'
+- name: Restore data to kuma database owner
+  shell: 'chown kuma:kuma /opt/uptime-kuma/data/kuma.db'
 
 - name: Restart applications
   systemd:

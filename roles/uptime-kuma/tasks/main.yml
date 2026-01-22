@@ -38,8 +38,14 @@
     version: '{{ package.version }}'
   become_user: '{{ uptimekuma.user }}'
 
-- name: install uptime kuma
-  shell: /usr/bin/npm run setup
+- name: build uptime kuma backend
+  shell: /usr/bin/npm ci --omit dev --no-audit && npm run download-dist
+  args:
+    chdir: '/opt/uptime-kuma'
+  become_user: '{{ uptimekuma.user }}'
+
+- name: build uptime kuma frontent
+  shell: /usr/bin/npm run download-dist
   args:
     chdir: '/opt/uptime-kuma'
   become_user: '{{ uptimekuma.user }}'
