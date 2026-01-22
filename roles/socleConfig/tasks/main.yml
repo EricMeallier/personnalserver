@@ -34,6 +34,12 @@
     regexp: '^Subsystem.*sftp'
     line: '# Subsystem       sftp    /usr/lib/openssh/sftp-server'
 
+- name: Disable weak MAC algorithms
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: 'MACs *'
+    line: 'MACs -*md5*,*sha1,*sha1-*,*-64,*-96,*umac-64*'
+
 - name: Sshd service restart with full configuration
   systemd:
     name: 'sshd'
