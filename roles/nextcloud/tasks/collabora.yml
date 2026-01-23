@@ -55,6 +55,10 @@
   shell: 
     cmd: 'coolconfig set  per_document.max_concurrency 4'
 
+- name: Collabora config - Server Name
+  shell: 
+    cmd: 'coolconfig set server_name {{ office.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} '
+
 - name: Collabora service start
   systemd:
     name: 'coolwsd'
@@ -63,6 +67,12 @@
 - name: generate office certificate
   shell: /usr/bin/certbot certonly -d {{ office.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive
   when: not redmine_unsecured
+
+- name: office and nextcloud redirect via localhost (/etc/hosts) to ease wopi connexion
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '^127\.0\.0\.1*'
+    line: "127.0.0.1  localhost {{ office.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} {{ nextcloud.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}"
 
 # finish installation with ssl termination
 - name: Copy full nginx ssl configuration file
