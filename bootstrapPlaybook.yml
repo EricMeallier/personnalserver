@@ -1,9 +1,10 @@
 ---
-- hosts: all
+- name: Bootstrap playbook
+  hosts: all
   gather_facts: no
 
   become: true
 
   roles:
-  - waitForSSH
-  - ovhuser
+    - wait_for_ssh
+    - ovhuser

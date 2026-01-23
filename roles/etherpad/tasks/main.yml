@@ -1,52 +1,55 @@
 ---
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{etherpad.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ etherpad.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
 - name: Is already installed ?
-  stat:
+  ansible.builtin.stat:
     path: "/opt/etherpad-lite/settings.json"
   register: already_installed
 
 - name: Create dedicated database
-  include_role:
-    name : pg_new_fresh_database
+  ansible.builtin.include_role:
+    name: pg_new_fresh_database
   vars:
-    pg_username: '{{ dbschema.etherpad.username }}'
-    pg_password: '{{ dbschema.etherpad.password }}'
-    pg_database: '{{ dbschema.etherpad.database }}'
+    pg_new_fresh_database_pg_username: '{{ dbschema.etherpad.username }}'
+    pg_new_fresh_database_pg_password: '{{ dbschema.etherpad.password }}'
+    pg_new_fresh_database_pg_database: '{{ dbschema.etherpad.database }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Ensure group "etherpad" exists
-  group:
+  ansible.builtin.group:
     name: etherpad
     state: present
 
 - name: Add the user 'etherpad'
-  user:
+  ansible.builtin.user:
     name: etherpad
     group: etherpad
 
 - name: Download etherpad files
-  get_url:
+  ansible.builtin.get_url:
     url: https://github.com/ether/etherpad-lite/archive/{{ package.version }}.zip
     dest: '/tmp/etherpad-{{ package.version }}.zip'
     timeout: 30
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Extract etherpad files into /opt
-  unarchive:
+  ansible.builtin.unarchive:
     src: '/tmp/etherpad-{{ package.version }}.zip'
     dest: /opt
     remote_src: 'yes'
     owner: etherpad
     group: etherpad
 
-- name: link to current version
-  file:
+- name: Link to current version
+  ansible.builtin.file:
     src: /opt/etherpad-lite-{{ package.version }}
     dest: /opt/etherpad-lite
     state: 'link'
@@ -54,57 +57,60 @@
     group: 'etherpad'
 
 - name: Copy database configuration file
-  template:
+  ansible.builtin.template:
     src: settings.json
     dest: /opt/etherpad-lite/settings.json
     owner: etherpad
     group: etherpad
     mode: '0644'
 
-- name: retrieve dependencies
-  shell: 
+- name: Retrieve dependencies
+  ansible.builtin.shell:
     cmd: bash /opt/etherpad-lite/bin/installDeps.sh
     chdir: '/opt/etherpad-lite'
 
-- name: etherpad owner for node_modules
-  shell: chown -R etherpad:etherpad /opt/etherpad-lite-{{ package.version }}
+- name: Etherpad owner for node_modules
+  ansible.builtin.shell: chown -R etherpad:etherpad /opt/etherpad-lite-{{ package.version }}
 
 - name: Install etherpad service script
-  copy:
+  ansible.builtin.copy:
     src: etherpad.service
     dest: /etc/systemd/system/etherpad.service
     owner: root
     group: root
     mode: '0644'
 
-- name: etherpad service reload/start
-  systemd:
+- name: Etherpad service reload/start
+  ansible.builtin.systemd:
     name: 'etherpad'
     daemon_reload: true
     state: restarted
     enabled: true
 
 - name: Is certificate already installed ?
-  stat:
-    path: "/etc/letsencrypt/live/{{ etherpad.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}/fullchain.pem"
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ etherpad.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }}/fullchain.pem"
   register: cert_already_installed
 
-- name: generate etherpad certificate
-  shell: /usr/bin/certbot certonly -d {{ etherpad.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive
+- name: Generate etherpad certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ etherpad.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
   when: not redmine_unsecured and not cert_already_installed.stat.exists
-      
+
 # finish installation with ssl termination
 - name: Copy full nginx ssl configuration file
-  template:
+  ansible.builtin.template:
     src: etherpad.conf
     dest: /opt/nginx/conf/server/etherpad.conf
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Nginx service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     state: restarted
 
 - name: Cleanup installation
-  file:
+  ansible.builtin.file:
     path: '/tmp/etherpad-{{ package.version }}.zip'
     state: 'absent'

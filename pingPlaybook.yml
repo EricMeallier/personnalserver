@@ -1,7 +1,8 @@
 ---
-- hosts: all
+- name: ping playbook
+  hosts: all
 
   become: true
 
   roles:
-  - pingHost
+    - ping_host

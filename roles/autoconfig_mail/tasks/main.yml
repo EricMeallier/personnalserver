@@ -1,0 +1,45 @@
+---
+# put the autoconfiguration email client file in public access
+
+
+- name: Update DNS
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
+  vars:
+    update_infomaniak_dns_target_extension: '{{ autoconfig.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
+  when: not redmine_unsecured
+
+- name: Directory for files under /data
+  ansible.builtin.file:
+    path: /data/autoconfig-files/mail
+    state: 'directory'
+    owner: 'nobody'
+    group: 'nogroup'
+    mode: '0644'
+
+- name: Configuration mail servers
+  ansible.builtin.template:
+    src: config.xml
+    dest: /data/autoconfig-files/mail/config-v1.1.xml
+    owner: 'nobody'
+    group: 'nogroup'
+    mode: '0644'
+
+- name: Generate static certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ autoconfig.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
+  when: not redmine_unsecured
+
+# finish installation with ssl termination
+- name: Copy full nginx ssl configuration file
+  ansible.builtin.template:
+    src: autoconfig.conf
+    dest: /opt/nginx/conf/server/autoconfig.conf
+    owner: 'nobody'
+    group: 'nogroup'
+    mode: '0644'
+
+- name: Nginx service restart with full configuration
+  ansible.builtin.systemd:
+    name: 'nginx'
+    state: restarted

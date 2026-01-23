@@ -1,4 +1,4 @@
 ---
 
 # vars for environment
-redmine_unsecured: False
+redmine_unsecured: false

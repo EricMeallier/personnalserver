@@ -1,76 +1,81 @@
 ---
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{gitea.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ gitea.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
-- name: install gitea pre requisites
-  apt: 
+- name: Install gitea pre requisites
+  ansible.builtin.apt:
     name:
-    - git
+      - git
     state: present
 
 - name: Ensure group "gitea" exists
-  group:
+  ansible.builtin.group:
     name: gitea
     state: present
 
 - name: Add the user 'gitea'
-  user:
+  ansible.builtin.user:
     name: gitea
     group: gitea
 
 - name: Creating working folders
-  file:
+  ansible.builtin.file:
     path: '{{ item }}'
     state: directory
-    recurse: yes
+    recurse: true
     owner: gitea
     group: gitea
   loop:
-  - '/opt/gitea'
-  - '/data/gitea'  
+    - '/opt/gitea'
+    - '/data/gitea'
 
 - name: Is already installed ?
-  stat:
+  ansible.builtin.stat:
     path: "/opt/gitea/gitea.ini"
   register: already_installed
 
 - name: Is already downloaded ?
-  stat:
+  ansible.builtin.stat:
     path: "'/opt/gitea/gitea-{{ package.version }}-linux-amd64'"
   register: already_zip
 
-- find:
+- name: Is gitea executable already present ?
+  ansible.builtin.find:
     paths: /opt/gitea/
     patterns: "gitea-*-linux-amd64"
   register: find_results
 
-- file:
+- name: Remove old installed executable
+  ansible.builtin.file:
     path: "{{ item['path'] }}"
     state: absent
   with_items: "{{ find_results['files'] }}"
 
 - name: Create dedicated database
-  include_role:
-    name : pg_new_fresh_database
+  ansible.builtin.include_role:
+    name: pg_new_fresh_database
   vars:
-    pg_username: '{{ dbschema.gitea.username }}'
-    pg_password: '{{ dbschema.gitea.password }}'
-    pg_database: '{{ dbschema.gitea.database }}'
+    pg_new_fresh_database_pg_username: '{{ dbschema.gitea.username }}'
+    pg_new_fresh_database_pg_password: '{{ dbschema.gitea.password }}'
+    pg_new_fresh_database_pg_database: '{{ dbschema.gitea.database }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Download gitea files
-  get_url:
+  ansible.builtin.get_url:
     url: https://github.com/go-gitea/gitea/releases/download/v{{ package.version }}/gitea-{{ package.version }}-linux-amd64
     dest: '/opt/gitea/gitea-{{ package.version }}-linux-amd64'
+    owner: gitea
+    group: gitea
+    mode: '0600'
   when: not already_zip.stat.exists is defined or not already_zip.stat.exists
 
 - name: Backup old installation, if needed
-  copy:
+  ansible.builtin.copy:
     remote_src: true
     src: '/opt/gitea/gitea.ini'
     dest: '/opt/gitea.ini'
@@ -80,14 +85,14 @@
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Make it executable
-  file:
+  ansible.builtin.file:
     path: '/opt/gitea/gitea-{{ package.version }}-linux-amd64'
     mode: '755'
     owner: gitea
     group: gitea
 
-- name: link to current version
-  file:
+- name: Link to current version
+  ansible.builtin.file:
     src: /opt/gitea/gitea-{{ package.version }}-linux-amd64
     dest: /opt/gitea/gitea
     state: 'link'
@@ -95,74 +100,80 @@
     group: 'gitea'
 
 - name: Data folder creation
-  file:
+  ansible.builtin.file:
     path: '/data/gitea'
     state: 'directory'
     owner: gitea
     group: gitea
 
 - name: Restore old configuration, if needed
-  command: mv /opt/gitea.ini /opt/gitea/gitea.ini
+  ansible.builtin.command: mv /opt/gitea.ini /opt/gitea/gitea.ini
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Copy database configuration file
-  template:
+  ansible.builtin.template:
     src: gitea.ini
     dest: /opt/gitea/gitea.ini
     owner: gitea
     group: gitea
     mode: '0600'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
-  
+
 - name: Install gitea service script
-  copy:
+  ansible.builtin.copy:
     src: gitea.service
     dest: /etc/systemd/system/gitea.service
     owner: root
     group: root
     mode: '0644'
 
-- name: gitea service reload/start
-  systemd:
+- name: Gitea service reload/start
+  ansible.builtin.systemd:
     name: 'gitea'
     daemon_reload: true
     state: restarted
     enabled: true
 
 - name: Create admin user
-  command: '/opt/gitea/gitea --config /opt/gitea/gitea.ini admin user create --username {{ gitea.admin.username }} --password {{ gitea.admin.password }} --email {{ gitea.admin.email }} --admin'
+  ansible.builtin.command: '/opt/gitea/gitea --config /opt/gitea/gitea.ini admin user create --username {{ gitea.admin.username }} --password {{ gitea.admin.password }} --email {{ gitea.admin.email }} --admin'
   become_user: 'gitea'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
-- name: nginx service reload/start
-  systemd:
+- name: Nginx service reload/start
+  ansible.builtin.systemd:
     name: 'nginx'
     daemon_reload: true
     state: started
     enabled: true
 
-- name: generate gitea certificate
-  shell: /usr/bin/certbot certonly -d {{ gitea.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive
+- name: Generate gitea certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ gitea.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
   when: not redmine_unsecured
-      
+
 # finish installation with ssl termination
 - name: Copy full nginx ssl configuration file
-  template:
+  ansible.builtin.template:
     src: gitea.conf
     dest: /opt/nginx/conf/server/gitea.conf
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Nginx service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     state: restarted
 
 - name: Ouverture firewall entrant (tcp)
-  ufw:
+  community.general.ufw:
     rule: 'allow'
     proto: 'tcp'
     port: '{{ gitea.ssh.port }}'
 
-- name: logrotate configuration
-  copy:
+- name: Logrotate configuration
+  ansible.builtin.copy:
     src: logrotate
     dest: /etc/logrotate.d/gitea
+    owner: root
+    group: root
+    mode: '0644'

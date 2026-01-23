@@ -1,9 +1,0 @@
----
-
-uptimekuma:
-  user: kuma
-  group: kuma
-  service: kuma
-
-package:
-  version: '2.1.0-beta.2'

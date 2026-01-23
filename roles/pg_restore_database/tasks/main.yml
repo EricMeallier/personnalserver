@@ -1,25 +1,25 @@
 ---
 
 - name: Restore files from pcloud
-  include_role:
-    name : pcloud_restore_file
+  ansible.builtin.include_role:
+    name: pcloud_restore_file
   vars:
-    foldername: '/tmp'
-    filename: '{{ pg_filename }}'
+    pcloud_restore_file_foldername: '/tmp'
+    pcloud_restore_file_filename: '{{ pg_restore_database_pg_filename }}'
 
-- name: delete existing database
-  shell: psql -c "DROP DATABASE {{ pg_database }}"
+- name: Delete existing database
+  ansible.builtin.shell: psql -c "DROP DATABASE {{ pg_restore_database_pg_database }}"
   become_user: 'postgres'
 
-- name: create database
-  shell: psql -c "CREATE DATABASE {{ pg_database }} OWNER {{ pg_username }}"
+- name: Create database
+  ansible.builtin.shell: psql -c "CREATE DATABASE {{ pg_restore_database_pg_database }} OWNER {{ pg_restore_database_pg_username }}"
   become_user: 'postgres'
 
-- name: import database
-  shell : psql {{ pg_database }} < /tmp/{{ pg_filename }}
+- name: Import database
+  ansible.builtin.shell: psql {{ pg_restore_database_pg_database }} < /tmp/{{ pg_restore_databas_epg_filename }}
   become_user: 'postgres'
 
-- name: remove imported file
-  file:
-    path: /tmp/{{ pg_filename }}
+- name: Remove imported file
+  ansible.builtin.file:
+    path: /tmp/{{ pg_restore_database_pg_filename }}
     state: absent

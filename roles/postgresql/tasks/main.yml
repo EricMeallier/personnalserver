@@ -1,14 +1,14 @@
 ---
 
 - name: install postgresql installation pre requisites
-  apt: 
+  ansible.builtin.apt:
     name:
     - apt-transport-https
     - curl
     - ca-certificates
 
 - name: install postgresql server
-  apt: 
+  ansible.builtin.apt:
     name:
     - postgresql-{{ postgresql.version }}
     state: present

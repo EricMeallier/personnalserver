@@ -1,135 +1,145 @@
 ---
 
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{gogs.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ gogs.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
-- name: install gogs pre requisites
-  apt: 
+- name: Install gogs pre requisites
+  ansible.builtin.apt:
     name:
-    - git
+      - git
     state: present
 
 - name: Ensure group "gogs" exists
-  group:
+  ansible.builtin.group:
     name: gogs
     state: present
 
 - name: Add the user 'gogs'
-  user:
+  ansible.builtin.user:
     name: gogs
     group: gogs
 
 - name: Is already installed ?
-  stat:
+  ansible.builtin.stat:
     path: "/opt/gogs/custom/conf/app.ini"
   register: already_installed
 
 - name: Is already downloaded ?
-  stat:
-    path: "'/tmp/gogs-{{package.version}}.zip'"
+  ansible.builtin.stat:
+    path: "'/tmp/gogs-{{ package.version }}.zip'"
   register: already_zip
 
 - name: Create dedicated database
-  include_role:
-    name : pg_new_fresh_database
+  ansible.builtin.include_role:
+    name: pg_new_fresh_database
   vars:
-    pg_username: '{{ dbschema.gogs.username }}'
-    pg_password: '{{ dbschema.gogs.password }}'
-    pg_database: '{{ dbschema.gogs.database }}'
+    pg_new_fresh_database_pg_username: '{{ dbschema.gogs.username }}'
+    pg_new_fresh_database_pg_password: '{{ dbschema.gogs.password }}'
+    pg_new_fresh_database_pg_database: '{{ dbschema.gogs.database }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Download gogs files
-  get_url:
+  ansible.builtin.get_url:
     url: https://dl.gogs.io/{{ package.version }}/gogs_{{ package.version }}_linux_amd64.zip
     dest: '/tmp/gogs-{{ package.version }}.zip'
+    owner: root
+    group: root
+    mode: '0644'
   when: not already_zip.stat.exists is defined or not already_zip.stat.exists
 
 - name: Backup old installation, if needed
-  copy:
+  ansible.builtin.copy:
     remote_src: true
     src: '/opt/gogs/custom/conf/app.ini'
     dest: '/opt/app.ini'
+    owner: gogs
+    group: gogs
+    mode: '0700'
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Backup old installation data, if needed
-  copy:
+  ansible.builtin.copy:
     remote_src: true
     src: '/opt/gogs/data'
     dest: '/opt/data'
     owner: gogs
-    group: gogs    
+    group: gogs
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Cleanup target folder
-  file:
+  ansible.builtin.file:
     path: '{{ item }}'
     state: absent
   loop:
-  - '/opt/gogs-{{package.version}}'
-  - '/opt/gogs'
+    - '/opt/gogs-{{ package.version }}'
+    - '/opt/gogs'
 
 - name: Extract gogs files into /opt
-  unarchive:
+  ansible.builtin.unarchive:
     src: '/tmp/gogs-{{ package.version }}.zip'
     dest: /opt
     remote_src: 'yes'
     owner: gogs
     group: gogs
+    mode: '0744'
 
-- name: rename default folder name
-  command: 'mv /opt/gogs /opt/gogs-{{package.version}}'
+- name: Rename default folder name
+  ansible.builtin.command: 'mv /opt/gogs /opt/gogs-{{ package.version }}'
 
-- name: link to current version
-  file:
-    src: /opt/gogs-{{package.version}}
+- name: Link to current version
+  ansible.builtin.file:
+    src: /opt/gogs-{{ package.version }}
     dest: /opt/gogs
     state: 'link'
     owner: 'gogs'
     group: 'gogs'
+    mode: '0744'
 
 - name: Configuration folder creation
-  file:
+  ansible.builtin.file:
     path: '/opt/gogs/custom/conf'
     state: 'directory'
     owner: gogs
     group: gogs
+    mode: '0700'
 
 - name: Data folder creation
-  file:
+  ansible.builtin.file:
     path: '/data/gogs-repositories'
     state: 'directory'
     owner: gogs
     group: gogs
+    mode: '0600'
 
 - name: Restore old configuration, if needed
-  command: mv /opt/app.ini /opt/gogs/custom/conf/app.ini
+  ansible.builtin.command: mv /opt/app.ini /opt/gogs/custom/conf/app.ini
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Restore old configuration data, if needed
-  command: mv /opt/data /opt/gogs/data
+  ansible.builtin.command: mv /opt/data /opt/gogs/data
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Copy database configuration file
-  template:
+  ansible.builtin.template:
     src: app.ini
     dest: /opt/gogs/custom/conf/app.ini
     owner: gogs
     group: gogs
     mode: '0644'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
-  
+
 - name: Make executable gogs
-  file:
+  ansible.builtin.file:
     path: '/opt/gogs/gogs'
     mode: u+rxw,g+rx,o+rx
 
 - name: Install gogs service script
-  copy:
+  ansible.builtin.copy:
     src: gogs.service
     dest: /etc/systemd/system/gogs.service
     owner: root
@@ -137,51 +147,53 @@
     mode: '0644'
 
 - name: Gogs service reload/start
-  systemd:
+  ansible.builtin.systemd:
     name: 'gogs'
     daemon_reload: true
     state: restarted
     enabled: true
 
 - name: Create admin user
-  command: '/opt/gogs/gogs admin create-user --name {{ gogs.admin.username }} -password {{ gogs.admin.password }} --email {{ gogs.admin.email }} --admin'
+  ansible.builtin.command: '/opt/gogs/gogs admin create-user --name {{ gogs.admin.username }} -password {{ gogs.admin.password }} --email {{ gogs.admin.email }} --admin'
+  args:
+    chdir: /opt/gogs
   become_user: 'gogs'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
-- name: nextcloud service reload/start
-  systemd:
+- name: Nginx service reload/start
+  ansible.builtin.systemd:
     name: 'nginx'
     daemon_reload: true
     state: started
     enabled: true
 
-- name: generate gogs certificate
-  shell: /usr/bin/certbot certonly -d {{ gogs.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive
+- name: Generate gogs certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ gogs.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
   when: not redmine_unsecured
-      
+
 # finish installation with ssl termination
 - name: Copy full nginx ssl configuration file
-  template:
+  ansible.builtin.template:
     src: gogs.conf
     dest: /opt/nginx/conf/server/gogs.conf
 
 - name: Nginx service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     state: restarted
 
 - name: Ouverture firewall entrant (tcp)
-  ufw:
+  community.general.ufw:
     rule: 'allow'
     proto: 'tcp'
     port: '{{ gogs.ssh.port }}'
 
-- name: logrotate configuration
-  copy:
+- name: Logrotate configuration
+  ansible.builtin.copy:
     src: logrotate
     dest: /etc/logrotate.d/gogs
 
 - name: Cleanup installation
-  file:
+  ansible.builtin.file:
     path: '/tmp/gogs-{{ package.version }}.zip'
     state: 'absent'

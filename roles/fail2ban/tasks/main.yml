@@ -1,27 +1,27 @@
 ---
 
-- name: install package
-  apt: 
+- name: Install package
+  ansible.builtin.apt:
     name:
     - fail2ban
     state: present
 
-- name: active nginx supervision
-  copy:
+- name: Active nginx supervision
+  ansible.builtin.copy:
     src: customNginx.conf
     dest: /etc/fail2ban/jail.d/customNginx.conf
     mode: '0644'
 
 - name: Default backend set to systemd
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/fail2ban/jail.conf
     regexp: "^backend = auto"
     line: "backend = systemd"
 
 - name: Modify rights access to allow netdata supervision
-  shell: chmod o+r /var/run/fail2ban/fail2ban.sock
+  ansible.builtin.shell: chmod o+r /var/run/fail2ban/fail2ban.sock
 
 - name: Service restart
-  systemd:
+  ansible.builtin.systemd:
     name: 'fail2ban'
     state: restarted

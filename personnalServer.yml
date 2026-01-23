@@ -1,27 +1,29 @@
 ---
-- hosts: all
+- name: main playbook
+  hosts: all
 
   become: true
 
   roles:
-  - socleConfig
-  - postgresql
-  - redmine
-#  - nginx
-  - nextcloud
-  - gogs
-  - gitea
-  - etherpad
-  - ethercalc
-  - spliit  
-  - fail2ban
-  - backup
-  - monit
-  - checkVersion
-  - logo
-  - autoconfigMail
-  - uptime-kuma
-#  - restore_data
-  - rustdesk
-  - netdata
-  - netdataConf
+    - socle_config
+    - postgresql
+    - redmine
+#    - nginx
+    - nextcloud
+    - gogs
+    - gitea
+    - etherpad
+    - ethercalc
+    - spliit
+    - fail2ban
+    - backup
+    - monit
+    - check_version
+    - logo
+    - autoconfig_mail
+    - uptime_kuma
+    - restore_data
+    - rustdesk
+    - netdata
+    - netdata_conf
+#    - keycloak

@@ -1,28 +1,28 @@
 ---
 
 - name: install php installation pre requisites
-  apt: 
+  ansible.builtin.apt:
     name:
     - apt-transport-https
 
 - name: adding php repository gpg key
-  get_url:
+  ansible.builtin.get_url:
     url: https://packages.sury.org/php/apt.gpg
     dest: /usr/share/keyrings/deb.sury.org-php.gpg
 
 - name: Add php repo with key from URL
-  deb822_repository:
+  ansible.builtin.deb822_repository:
     name: php
     uris: https://packages.sury.org/php/
     suites: 'trixie'
-    components: main 
+    components: main
     architectures: amd64
     signed_by: /usr/share/keyrings/deb.sury.org-php.gpg
     trusted: true
   register: node_repo
 
 - name: install nextcloud pre requisites
-  apt: 
+  ansible.builtin.apt:
     name:
     - php{{ php.version }}-fpm
     - php{{ php.version }}-common
@@ -42,25 +42,25 @@
     update_cache: yes
 
 - name: Copy php FPM configuration file
-  template:
+  ansible.builtin.template:
     src: www.conf
     dest: /etc/php/{{ php.version }}/fpm/pool.d/www.conf
 
 - name: Configure php FPM to set the memory allowed
-  replace:
+  ansible.builtin.replace:
     dest: '/etc/php/{{ php.version }}/fpm/php.ini'
     regexp: '^memory_limit = .*$'
     replace: 'memory_limit = 512M'
 
 - name: Configure php FPM to set the interned_strings_buffer
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: '/etc/php/{{ php.version }}/fpm/php.ini'
     insertafter: '^\[opcache\]'
     regexp: '^opcache.interned_strings_buffer=.*$'
     line: 'opcache.interned_strings_buffer=16'
 
 - name: Configure acces to php-fpm.sock
-  file:
+  ansible.builtin.file:
     path: /run/php/php{{ php.version }}-fpm.sock
     state: file
     owner: 'nobody'

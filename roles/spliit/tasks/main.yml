@@ -1,52 +1,52 @@
 ---
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{spliit.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ spliit.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
 - name: Is already installed ?
-  stat:
+  ansible.builtin.stat:
     path: "/opt/spliit/.env"
   register: already_installed
 
 - name: Create dedicated database
-  include_role:
-    name : pg_new_fresh_database
+  ansible.builtin.include_role:
+    name: pg_new_fresh_database
   vars:
-    pg_username: '{{ dbschema.spliit.username }}'
-    pg_password: '{{ dbschema.spliit.password }}'
-    pg_database: '{{ dbschema.spliit.database }}'
+    pg_new_fresh_database_pg_username: '{{ dbschema.spliit.username }}'
+    pg_new_fresh_database_pg_password: '{{ dbschema.spliit.password }}'
+    pg_new_fresh_database_pg_database: '{{ dbschema.spliit.database }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Ensure group "spliit" exists
-  group:
+  ansible.builtin.group:
     name: spliit
     state: present
 
 - name: Add the user 'spliit'
-  user:
+  ansible.builtin.user:
     name: spliit
     group: spliit
 
 - name: Download spliit files
-  get_url:
+  ansible.builtin.get_url:
     url: https://github.com/spliit-app/spliit/archive/refs/tags/{{ package.version }}.tar.gz
     dest: '/tmp/spliit-{{ package.version }}.tar.gz'
     timeout: 30
 
 - name: Extract spliit files into /opt
-  unarchive:
+  ansible.builtin.unarchive:
     src: '/tmp/spliit-{{ package.version }}.tar.gz'
     dest: /opt
     remote_src: 'yes'
     owner: spliit
     group: spliit
 
-- name: link to current version
-  file:
+- name: Link to current version
+  ansible.builtin.file:
     src: /opt/spliit-{{ package.version }}
     dest: /opt/spliit
     state: 'link'
@@ -54,62 +54,62 @@
     group: 'spliit'
 
 - name: Copy database configuration file
-  template:
+  ansible.builtin.template:
     src: env
     dest: /opt/spliit/.env
     owner: spliit
     group: spliit
     mode: '0644'
 
-- name: retrieve dependencies
-  shell:
+- name: Retrieve dependencies
+  ansible.builtin.shell:
     cmd: '/usr/bin/npm install'
     chdir: '/opt/spliit'
 
-- name: build application
-  shell:
+- name: Build application
+  ansible.builtin.shell:
     cmd: '/usr/bin/npm run build'
     chdir: '/opt/spliit'
 
-- name: open acces to .next folder
-  shell: chmod -R 777 /opt/spliit/.next
+- name: Open acces to .next folder
+  ansible.builtin.shell: chmod -R 777 /opt/spliit/.next
 
 - name: Install spliit service script
-  copy:
+  ansible.builtin.copy:
     src: spliit.service
     dest: /etc/systemd/system/spliit.service
     owner: root
     group: root
     mode: '0644'
 
-- name: spliit service reload/start
-  systemd:
+- name: Spliit service reload/start
+  ansible.builtin.systemd:
     name: 'spliit'
     daemon_reload: true
     state: restarted
     enabled: true
 
 - name: Is certificate already installed ?
-  stat:
-    path: "/etc/letsencrypt/live/{{ spliit.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}/fullchain.pem"
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ spliit.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }}/fullchain.pem"
   register: cert_already_installed
 
-- name: generate spliit certificate
-  shell: /usr/bin/certbot certonly -d {{ spliit.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive
+- name: Generate spliit certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ spliit.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
   when: not redmine_unsecured and not cert_already_installed.stat.exists
-      
+
 # finish installation with ssl termination
 - name: Copy full nginx ssl configuration file
-  template:
+  ansible.builtin.template:
     src: spliit.conf
     dest: /opt/nginx/conf/server/spliit.conf
 
 - name: Nginx service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     state: restarted
 
 - name: Cleanup installation
-  file:
+  ansible.builtin.file:
     path: '/tmp/spliit-{{ package.version }}.tar.gz'
     state: 'absent'

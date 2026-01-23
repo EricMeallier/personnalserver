@@ -1,15 +1,15 @@
 ---
 
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{redmine.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ redmine.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
 - name: Install redmine pre requisites
-  apt: 
+  ansible.builtin.apt:
     name:
     - curl
     - gnupg2
@@ -22,77 +22,77 @@
     state: present
 
 - name: Is already installed ?
-  stat:
+  ansible.builtin.stat:
     path: "/opt/redmine/config/database.yml"
   register: already_installed
 
 - name: Is already downloaded ?
-  stat:
-    path: '/tmp/redmine-{{ package.version }}.{{package.type}}'
+  ansible.builtin.stat:
+    path: '/tmp/redmine-{{ package.version }}.{{ package.type }}'
   register: already_zip
 
 - name: Create dedicated database
-  include_role:
-    name : pg_new_fresh_database
+  ansible.builtin.include_role:
+    name: pg_new_fresh_database
   vars:
-    pg_username: '{{ dbschema.redmine.username }}'
-    pg_password: '{{ dbschema.redmine.password }}'
-    pg_database: '{{ dbschema.redmine.database }}'
+    pg_new_fresh_database_pg_username: '{{ dbschema.redmine.username }}'
+    pg_new_fresh_database_pg_password: '{{ dbschema.redmine.password }}'
+    pg_new_fresh_database_pg_database: '{{ dbschema.redmine.database }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: adding gpg key for rvm mpapis
-  shell: curl -sSL https://rvm.io/mpapis.asc | gpg --import -
-  
+  ansible.builtin.shell: set -o pipefail && curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+
 - name: adding gpg key for rvm pkuczynski
-  shell: curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
-  
+  ansible.builtin.shell: set -o pipefail && curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
+
 - name: check is rvm already installed
-  stat:
+  ansible.builtin.stat:
     path: /usr/local/rvm
-  register: rvmExists
-  
+  register: rvm_exists
+
 - name: install rvm
-  shell: curl -sSL https://get.rvm.io | bash -s stable
-  when: not rvmExists.stat.isdir is defined or not rvmExists.stat.isdir
+  ansible.builtin.shell: set -o pipefail && curl -sSL https://get.rvm.io | bash -s stable
+  when: not rvm_exists.stat.isdir is defined or not rvm_exists.stat.isdir
 
 - name: Adding user root to rvm users
-  user:
+  ansible.builtin.user:
     name: 'root'
-    groups: 
+    groups:
       - 'rvm'
     append: yes
 
-- name: check if nginx already exists
-  stat: 
+- name: Check if nginx already exists
+  ansible.builtin.stat:
     path: /opt/nginx/sbin/nginx
   register: nginx_exists
 
-- name: install ruby {{ruby.version}}
-  shell: /usr/local/rvm/bin/rvm install {{ruby.version}}
+- name: Install ruby {{ ruby.version }}
+  ansible.builtin.shell: /usr/local/rvm/bin/rvm install {{ ruby.version }}
 
-- name: use {{ruby.version}} ruby version
-  shell: /usr/local/rvm/bin/rvm alias create default ruby-{{ruby.version}}
+- name: Use ruby version {{ ruby.version }}
+  ansible.builtin.shell: /usr/local/rvm/bin/rvm alias create default ruby-{{ ruby.version }}
 
-- name: install pg client
-  shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ruby.version}}/bin; gem install pg -v '{{ package.gems.pg }}'
+- name: Install pg client
+  ansible.builtin.shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ ruby.version }}/bin; gem install pg -v '{{ package.gems.pg }}'
 
-- name: install passenger
-  shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ruby.version}}/bin; gem install passenger -v '{{ package.gems.passenger }}'
+- name: Install passenger
+  ansible.builtin.shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ ruby.version }}/bin; gem install passenger -v '{{ package.gems.passenger }}'
   when: not nginx_exists.stat.exists
 
-- name: install nginx with passenger
-  shell: passenger-install-nginx-module --auto --auto-download --prefix=/opt/nginx --languages ruby
+- name: Install nginx with passenger
+  ansible.builtin.shell: passenger-install-nginx-module --auto --auto-download --prefix=/opt/nginx --languages ruby
   environment:
-    GEM_PATH: '/usr/local/rvm/gems/ruby-{{ruby.version}}:/usr/local/rvm/gems/ruby-{{ruby.version}}@global'
-    GEM_HOME: '/usr/local/rvm/gems/ruby-{{ruby.version}}'
-    PATH: '/usr/local/rvm/gems/ruby-{{ruby.version}}/bin:/usr/local/rvm/gems/ruby-{{ruby.version}}@global/bin:/usr/local/rvm/rubies/ruby-{{ruby.version}}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/rvm/bin'
+    GEM_PATH: '/usr/local/rvm/gems/ruby-{{ ruby.version }}:/usr/local/rvm/gems/ruby-{{ ruby.version }}@global'
+    GEM_HOME: '/usr/local/rvm/gems/ruby-{{ ruby.version }}'
+    PATH: '/usr/local/rvm/gems/ruby-{{ ruby.version }}/bin:/usr/local/rvm/gems/ruby-{{ ruby.version }}@global/bin:/usr/local/rvm/rubies/ruby-{{ ruby.version }}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/rvm/bin'
   when: not nginx_exists.stat.exists
 
-- name: rvm group for rubies folders
-  shell: chown -R root:rvm /usr/local/rvm/rubies
+- name: Rvm group for rubies folders
+  ansible.builtin.shell: chown -R root:rvm /usr/local/rvm/rubies
 
-- name: add mjs extension to javascript files
-  lineinfile:
+- name: Add mjs extension to javascript files
+  ansible.builtin.lineinfile:
     dest: /opt/nginx/conf/mime.types
     insertafter: '^\[Service\]'
     regexp: '    application/javascript.*'
@@ -100,67 +100,68 @@
   when: not nginx_exists.stat.exists
 
 - name: Ensure group "redmine" exists
-  group:
+  ansible.builtin.group:
     name: redmine
     state: present
 
 - name: Add the user 'redmine'
-  user:
+  ansible.builtin.user:
     name: redmine
     group: redmine
 
 - name: Adding user redmine to rvm users
-  user:
+  ansible.builtin.user:
     name: 'redmine'
     groups:
-    - 'rvm'
+      - 'rvm'
     append: yes
-  
+
 - name: Backup old installation, if needed
-  copy:
+  ansible.builtin.copy:
     remote_src: true
     src: '/opt/redmine/config/{{ item }}'
     dest: '/opt/{{ item }}'
   ignore_errors: true
-  loop: 
-  - 'configuration.yml'
-  - 'database.yml'
+  register: ignore_errors_register
+  loop:
+    - 'configuration.yml'
+    - 'database.yml'
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Cleanup target folder
-  file:
+  ansible.builtin.file:
     path: '{{ item }}'
     state: absent
   loop:
-  - '/opt/redmine-{{package.version}}'
+  - '/opt/redmine-{{ package.version }}'
   - '/opt/redmine'
 
 - name: Download redmine files
-  get_url:
-    url: https://www.redmine.org/releases/redmine-{{package.version}}.{{package.type}}
-    dest: /tmp/redmine-{{package.version}}.{{package.type}}
-    checksum: sha256:{{package.checksum.sha256}}
+  ansible.builtin.get_url:
+    url: https://www.redmine.org/releases/redmine-{{ package.version }}.{{ package.type }}
+    dest: /tmp/redmine-{{ package.version }}.{{ package.type }}
+    checksum: sha256:{{ package.checksum.sha256 }}
   when: not already_zip.stat.exists is defined or not already_zip.stat.exists
 
 - name: Extract redmine files into /opt
-  unarchive:
-    src: /tmp/redmine-{{package.version}}.{{package.type}}
+  ansible.builtin.unarchive:
+    src: /tmp/redmine-{{ package.version }}.{{ package.type }}
     dest: /opt
     remote_src: 'yes'
     owner: 'nobody'
     group: 'rvm'
     mode: '775'
 
-- name: link to current version
-  file:
-    src: /opt/redmine-{{package.version}}
+- name: Link to current version
+  ansible.builtin.file:
+    src: /opt/redmine-{{ package.version }}
     dest: /opt/redmine
     state: 'link'
     owner: 'nobody'
     group: 'rvm'
 
 - name: Copy database configuration file
-  template:
+  ansible.builtin.template:
     src: database.yml
     dest: /opt/redmine/config/database.yml
     owner: 'nobody'
@@ -169,7 +170,7 @@
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Copy mail configuration file
-  template:
+  ansible.builtin.template:
     src: configuration.yml
     dest: /opt/redmine/config/configuration.yml
     owner: 'nobody'
@@ -178,68 +179,69 @@
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Restore old configuration, if needed
-  command: mv /opt/{{ item }} /opt/redmine/config/{{ item }}
+  ansible.builtin.command: mv /opt/{{ item }} /opt/redmine/config/{{ item }}
   loop:
     - 'configuration.yml'
     - 'database.yml'
   ignore_errors: true
+  register: ignore_errors_register
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
-- name: configure bundle tools
-  shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ruby.version}}/bin; bundle config set --local without 'development test'
+- name: Configure bundle tools
+  ansible.builtin.shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ ruby.version }}/bin; bundle config set --local without 'development test'
   args:
     chdir: '/opt/redmine/'
   become_user: redmine
 
-- name: configure redmine user to retrieve gems
-  shell: chmod -R g+w /usr/local/rvm/rubies/ruby-{{ruby.version}}/lib/ruby/gems/{{ruby.reducedversion}}
+- name: Configure redmine user to retrieve gems
+  ansible.builtin.shell: chmod -R g+w /usr/local/rvm/rubies/ruby-{{ ruby.version }}/lib/ruby/gems/{{ ruby.reducedversion }}
 
-- name: retrieve dependencies for redmine
-  shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ruby.version}}/bin; bundle install
+- name: Retrieve dependencies for redmine
+  ansible.builtin.shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ ruby.version }}/bin; bundle install
   args:
     chdir: '/opt/redmine/'
   become_user: redmine
 
-- name: generate redmine token
-  shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ruby.version}}/bin; bin/rake generate_secret_token
+- name: Generate redmine token
+  ansible.builtin.shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ ruby.version }}/bin; bin/rake generate_secret_token
   args:
     chdir: '/opt/redmine/'
   become_user: redmine
 
-- name: migrate redmine database
-  shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ruby.version}}/bin; RAILS_ENV=production bin/rake db:migrate
+- name: Migrate redmine database
+  ansible.builtin.shell: PATH=$PATH:/usr/local/rvm/rubies/ruby-{{ ruby.version }}/bin; RAILS_ENV=production bin/rake db:migrate
   args:
     chdir: '/opt/redmine/'
   become_user: redmine
 
-- name: directory for files under /data
-  file:
+- name: Directory for files under /data
+  ansible.builtin.file:
     path: /data/redmine-files
     state: 'directory'
     owner: 'nobody'
     group: 'nogroup'
 
-- name: directory for logs
-  file:
+- name: Directory for logs
+  ansible.builtin.file:
     path: /var/log/nginx
     state: 'directory'
 
-- name: remove default files directory
-  file:
-    path: /opt/redmine-{{package.version}}/files
+- name: Remove default files directory
+  ansible.builtin.file:
+    path: /opt/redmine-{{ package.version }}/files
     state: 'absent'
 
-- name: link to data directory
-  file:
+- name: Link to data directory
+  ansible.builtin.file:
     src: /data/redmine-files
-    dest: /opt/redmine-{{package.version}}/files
+    dest: /opt/redmine-{{ package.version }}/files
     state: 'link'
     owner: 'nobody'
     group: 'nogroup'
-  
-- name: permission to tmp directory
-  file:
-    path: /opt/redmine-{{package.version}}/tmp
+
+- name: Permission to tmp directory
+  ansible.builtin.file:
+    path: /opt/redmine-{{ package.version }}/tmp
     state: 'directory'
     mode: '777'
     owner: 'nobody'
@@ -247,7 +249,7 @@
     recurse: true
 
 - name: Install nginx service script
-  copy:
+  ansible.builtin.copy:
     src: nginx.service
     dest: /etc/systemd/system/nginx.service
     owner: root
@@ -255,7 +257,7 @@
     mode: '0644'
 
 - name: Copy minimal nginx configuration file
-  template:
+  ansible.builtin.template:
     src: minimal.conf
     dest: /opt/nginx/conf/nginx.conf
     owner: 'nobody'
@@ -263,39 +265,39 @@
     mode: '0644'
 
 - name: Create external configuration for nginx
-  file:
+  ansible.builtin.file:
     path: /opt/nginx/conf/server
     state: 'directory'
     mode: '0755'
-  
+
 - name: Nginx service reload/start
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     daemon_reload: true
     state: started
     enabled: true
 
-- name: generate redmine certificate
-  shell: /usr/bin/certbot certonly -d {{ redmine.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive
+- name: Generate redmine certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ redmine.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
   when: not redmine_unsecured
 
 # finish installation with ssl termination
 - name: Copy full nginx ssl configuration file
-  template:
+  ansible.builtin.template:
     src: redmine.conf
     dest: /opt/nginx/conf/server/redmine.conf
 
 - name: Nginx service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     state: restarted
 
-- name: logrotate configuration
-  copy:
+- name: Logrotate configuration
+  ansible.builtin.copy:
     src: logrotate
     dest: /etc/logrotate.d/redmine
 
 - name: Cleanup installation
-  file:
-    path: '/tmp/redmine-{{package.version}}.{{package.type}}'
+  ansible.builtin.file:
+    path: '/tmp/redmine-{{ package.version }}.{{ package.type }}'
     state: 'absent'

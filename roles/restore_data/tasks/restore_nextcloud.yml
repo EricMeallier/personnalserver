@@ -1,46 +1,47 @@
 ---
 
 - name: Stop applications
-  systemd:
+  ansible.builtin.systemd:
     name: '{{ service_name }}'
     state: stopped
   loop:
-  - 'nginx.service'
-  - 'php{{ php.version }}-fpm'
+    - 'nginx.service'
+    - 'php{{ php.version }}-fpm'
   loop_control:
     loop_var: service_name
-  ignore_errors: True
+  ignore_errors: true
+  register: ignore_errors_register
 
 - name: Restore database Nextcloud
-  include_role:
-    name : pg_restore_database
+  ansible.builtin.include_role:
+    name: pg_restore_database
   vars:
-    pg_filename: 'nextcloud-last.dmp'
-    pg_username: '{{ dbschema.nextcloud.username }}'
-    pg_database: '{{ dbschema.nextcloud.database }}'
+    pg_restore_database_pg_filename: 'nextcloud-last.dmp'
+    pg_restore_database_pg_username: '{{ dbschema.nextcloud.username }}'
+    pg_restore_database_pg_database: '{{ dbschema.nextcloud.database }}'
 
 - name: Mise à jour de l'environnement occ
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ upgrade'
     chdir: '/opt/nextcloud'
 
 - name: Disable TOTP for users
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ twofactorauth:disable {{ item }} totp'
     chdir: '/opt/nextcloud'
   loop:
-  - 'administrator'
-  - 'rickou_412'
-    
+    - 'administrator'
+    - 'rickou_412'
+
 - name: Restore files from pcloud Nextcloud
-  include_role:
-    name : pcloud_restore_file
+  ansible.builtin.include_role:
+    name: pcloud_restore_file
   vars:
-    foldername: '/data/nextcloud'
-    filename: 'nextcloud-last-data.tar'
+    pcloud_restore_file_foldername: '/data/nextcloud'
+    pcloud_restore_file_filename: 'nextcloud-last-data.tar'
 
 - name: Uncompress data Nextcloud
-  unarchive:
+  ansible.builtin.unarchive:
     src: '/data/nextcloud/nextcloud-last-data.tar'
     dest: '/'
     remote_src: 'yes'
@@ -48,17 +49,16 @@
     group: nogroup
 
 - name: Remove old archive Nextcloud
-  file:
+  ansible.builtin.file:
     path: '/data/nextcloud/nextcloud-last-data.tar'
     state: 'absent'
 
 - name: Restart applications
-  systemd:
+  ansible.builtin.systemd:
     name: '{{ service_name }}'
     state: started
   loop:
-  - 'php{{ php.version }}-fpm'
-  - 'nginx.service'
+    - 'php{{ php.version }}-fpm'
+    - 'nginx.service'
   loop_control:
     loop_var: service_name
-

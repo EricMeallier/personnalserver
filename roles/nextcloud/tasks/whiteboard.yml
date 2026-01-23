@@ -3,86 +3,87 @@
 # Whiteboard standalone server
 
 - name: Whiteboard config URL secure
-  shell: 
-    cmd: 'sudo -u nobody php{{ php.version }} occ config:app:set whiteboard collabBackendUrl --value="https://{{ nextcloud.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}/whiteboard/"'
-    chdir: '/opt/nextcloud-{{package.version}}'
+  ansible.builtin.shell:
+    cmd: 'sudo -u nobody php{{ php.version }} occ config:app:set whiteboard collabBackendUrl --value="https://{{ nextcloud.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }}/whiteboard/"'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not redmine_unsecured
 
 - name: Whiteboard config URL unsecure
-  shell: 
-    cmd: 'sudo -u nobody php{{ php.version }} occ config:app:set whiteboard collabBackendUrl --value="http://{{ nextcloud.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}/whiteboard/"'
-    chdir: '/opt/nextcloud-{{package.version}}'
+  ansible.builtin.shell:
+    cmd: 'sudo -u nobody php{{ php.version }} occ config:app:set whiteboard collabBackendUrl --value="http://{{ nextcloud.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }}/whiteboard/"'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: redmine_unsecured
 
 - name: Whiteboard config Secret
-  shell: 
-    cmd: 'sudo -u nobody php{{ php.version }} occ config:app:set whiteboard jwt_secret_key --value="{{whiteboard_secret}}"'
-    chdir: '/opt/nextcloud-{{package.version}}'
-  
+  ansible.builtin.shell:
+    cmd: 'sudo -u nobody php{{ php.version }} occ config:app:set whiteboard jwt_secret_key --value="{{ whiteboard_secret }}"'
+    chdir: '/opt/nextcloud-{{ package.version }}'
+
 - name: install pre requisites
-  apt: 
+  ansible.builtin.apt:
     name:
     - unzip
-    state: 'latest'
+    state: 'present'
 
 - name: Download whiteboard files
-  get_url:
-    url: https://github.com/nextcloud/whiteboard/archive/refs/tags/v{{package.whiteboard.version}}.zip
-    dest: '/tmp/whiteboard-{{package.whiteboard.version}}.zip'
+  ansible.builtin.get_url:
+    url: https://github.com/nextcloud/whiteboard/archive/refs/tags/v{{ package.whiteboard.version }}.zip
+    dest: '/tmp/whiteboard-{{ package.whiteboard.version }}.zip'
 
 - name: Find old version of whiteboard
-  find:
+  ansible.builtin.find:
     paths: /opt
     patterns: "whiteboard-*"
   register: find_results
 
 - name: remove old versions
-  file:
+  ansible.builtin.file:
     path: "{{ item['path'] }}"
     state: absent
   with_items: "{{ find_results['files'] }}"
 
 - name: Extract whiteboard files into /opt
-  unarchive:
-    src: '/tmp/whiteboard-{{package.whiteboard.version}}.zip'
+  ansible.builtin.unarchive:
+    src: '/tmp/whiteboard-{{ package.whiteboard.version }}.zip'
     dest: /opt
     remote_src: 'yes'
     owner: 'nobody'
     group: 'nogroup'
 
-- name: link whiteboard to current version
-  file:
-    src: /opt/whiteboard-{{package.whiteboard.version}}
+- name: Link whiteboard to current version
+  ansible.builtin.file:
+    src: /opt/whiteboard-{{ package.whiteboard.version }}
     dest: /opt/whiteboard
     state: 'link'
     owner: 'nobody'
     group: 'nogroup'
 
-- name: build Whiteboard from sources
-  shell:
+- name: Build Whiteboard from sources
+  ansible.builtin.shell:
     cmd: '/usr/bin/npm ci'
     chdir: '/opt/whiteboard'
 
 - name: Add whiteboard nextcloud application
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ app:install whiteboard'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   ignore_errors: true
+  register: ignore_errors_register
 
 - name: Enable whiteboard nextcloud application
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ app:enable whiteboard'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Enable basics applications, if fresh install (drawio not activated bby default, for example)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ app:enable {{ item }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   loop: "{{ package.appsToInstall }}"
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Whiteboard service script
-  template:
+  ansible.builtin.template:
     src: whiteboard.service
     dest: /etc/systemd/system/whiteboard.service
     owner: root
@@ -90,11 +91,11 @@
     mode: '0644'
 
 - name: Whiteboard service enable
-  systemd:
+  ansible.builtin.systemd:
     name: 'whiteboard.service'
     enabled: yes
 
 - name: Whiteboard service start
-  systemd:
+  ansible.builtin.systemd:
     name: 'whiteboard'
     state: restarted

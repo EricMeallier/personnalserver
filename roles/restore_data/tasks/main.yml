@@ -1,8 +1,8 @@
 ---
 
 - name: Restore applications
-  include_tasks:
-    file : '{{app_name}}'
+  ansible.builtin.include_tasks:
+    file: '{{ app_name }}'
   loop:
     - restore_redmine.yml
     - restore_nextcloud.yml

@@ -1,31 +1,31 @@
 ---
 
-- name: does the postgreql user exists ?
-  shell: psql -t -c "SELECT 'found' FROM pg_roles WHERE rolname='{{ pg_username }}'"
-  register: userExists
+- name: Does the postgreql user exists ?
+  ansible.builtin.shell: psql -t -c "SELECT 'found' FROM pg_roles WHERE rolname='{{ pg_new_fresh_database_pg_username }}'"
+  register: user_exists
   become_user: 'postgres'
 
-- name: create postgreql user
-  shell: psql -c "CREATE ROLE {{ pg_username }} PASSWORD '{{ pg_password }}' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN"
+- name: Create postgreql user
+  ansible.builtin.shell: psql -c "CREATE ROLE {{ pg_new_fresh_database_pg_username }} PASSWORD '{{ pg_new_fresh_database_pg_password }}' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT LOGIN"
   become_user: 'postgres'
-  when: userExists.stdout.find('found') != 1
+  when: user_exists.stdout.find('found') != 1
 
-- name: does the database exists ?
-  shell: psql -t -c "SELECT 'found' FROM pg_database WHERE datname='{{ pg_database }}'"
-  register: databaseExists
+- name: Does the database exists ?
+  ansible.builtin.shell: psql -t -c "SELECT 'found' FROM pg_database WHERE datname='{{ pg_new_fresh_database_pg_database }}'"
+  register: database_exists
   become_user: 'postgres'
 
-- name: delete existing database
-  shell: psql -c "DROP DATABASE {{ pg_database }}"
+- name: Delete existing database
+  ansible.builtin.shell: psql -c "DROP DATABASE {{ pg_new_fresh_database_pg_database }}"
   become_user: 'postgres'
-  when: databaseExists.stdout.find('found') == 1
+  when: database_exists.stdout.find('found') == 1
 
-- name: create database
-  shell: psql -c "CREATE DATABASE {{ pg_database }} OWNER {{ pg_username }}"
+- name: Create database
+  ansible.builtin.shell: psql -c "CREATE DATABASE {{ pg_new_fresh_database_pg_database }} OWNER {{ pg_new_fresh_database_pg_username }}"
   become_user: 'postgres'
 
 - name: Allow of access for user
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/postgresql/{{ postgresql.version }}/main/pg_hba.conf
-    regexp: "{{ pg_username }}"
-    line: "local {{pg_database}} {{ pg_username }} md5"
+    regexp: "{{ pg_new_fresh_database_pg_username }}"
+    line: "local {{ pg_new_fresh_database_pg_database }} {{ pg_new_fresh_database_pg_username }} md5"

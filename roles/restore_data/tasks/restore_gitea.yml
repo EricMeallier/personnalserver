@@ -1,7 +1,7 @@
 ---
 
 - name: Stop applications
-  systemd:
+  ansible.builtin.systemd:
     name: '{{ service_name }}'
     state: stopped
   loop:
@@ -10,24 +10,25 @@
   loop_control:
     loop_var: service_name
   ignore_errors: True
+  register: ignore_errors_register
 
 - name: Restore database gitea
-  include_role:
-    name : pg_restore_database
+  ansible.builtin.include_role:
+    name: pg_restore_database
   vars:
-    pg_filename: 'gitea-last.dmp'
-    pg_username: '{{ dbschema.gitea.username }}'
-    pg_database: '{{ dbschema.gitea.database }}'
+    pg_restore_database_pg_filename: 'gitea-last.dmp'
+    pg_restore_database_pg_username: '{{ dbschema.gitea.username }}'
+    pg_restore_database_pg_database: '{{ dbschema.gitea.database }}'
 
 - name: Restore files from pcloud gitea
-  include_role:
-    name : pcloud_restore_file
+  ansible.builtin.include_role:
+    name: pcloud_restore_file
   vars:
-    foldername: '/data/gitea'
-    filename: 'gitea-last-data.tar'
+    pcloud_restore_file_foldername: '/data/gitea'
+    pcloud_restore_file_filename: 'gitea-last-data.tar'
 
 - name: Uncompress data gitea
-  unarchive:
+  ansible.builtin.unarchive:
     src: '/data/gitea/gitea-last-data.tar'
     dest: '/'
     remote_src: 'yes'
@@ -35,12 +36,12 @@
     group: gitea
 
 - name: Remove old archive gitea
-  file:
+  ansible.builtin.file:
     path: '/data/gitea/gitea-last-data.tar'
     state: 'absent'
 
 - name: Restart applications
-  systemd:
+  ansible.builtin.systemd:
     name: '{{ service_name }}'
     state: started
   loop:
@@ -48,4 +49,3 @@
   - 'nginx.service'
   loop_control:
     loop_var: service_name
-

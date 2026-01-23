@@ -4,7 +4,7 @@
 #
 
 - name: user ovhuser
-  user:
+  ansible.builtin.user:
     name: 'ovhuser'
     system: 'true'
     home: '/home/ovhuser'
@@ -12,7 +12,7 @@
     state: 'present'
 
 - name: user ovhuser authorized_keys
-  authorized_key:
+  ansible.posix.authorized_key:
     user: 'ovhuser'
     key: '{{ ovhuser.pubkey }}'
     exclusive: 'yes'
@@ -21,27 +21,37 @@
     manage_dir: 'yes'
 
 - name: user with no password (must be set to unlock account for sshd)
-  shell: '/usr/sbin/usermod -p "*" ovhuser'
+  ansible.builtin.shell: '/usr/sbin/usermod -p "*" ovhuser'
 
 - name: user ovhuser sudoer
-  lineinfile: dest=/etc/sudoers.d/ovhuser regexp="{{ item.regexp }}" line="{{ item.line }}"
-              create=true state=present owner=root group=root mode=440
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers.d/ovhuser
+    regexp: '{{ item.regexp }}'
+    line: '{{ item.line }}'
+    create: true
+    state: present
+    owner: root
+    group: root
+    mode: '0440'
   with_items:
     - {line: 'ovhuser ALL=(ALL) NOPASSWD: ALL', regexp: '^ovhuser ALL=\(ALL\) NOPASSWD: ALL' }
 
 - name: user ovhuser sudo witout tty
-  replace: dest=/etc/sudoers regexp='^#?Defaults(\s+)requiretty$' replace='Defaults !requiretty'
+  ansible.builtin.replace:
+    dest: /etc/sudoers
+    regexp: '^#?Defaults(\s+)requiretty$'
+    replace: 'Defaults !requiretty'
 
 - name: push default vi configuration
-  copy:
-    src:  vimrc
+  ansible.builtin.copy:
+    src: vimrc
     dest: /home/ovhuser/.vimrc
     owner: ovhuser
     mode: '0755'
 
 - name: push default vi configuration for root user
-  copy:
-    src:  vimrc
+  ansible.builtin.copy:
+    src: vimrc
     dest: /root/.vimrc
     owner: ovhuser
     mode: '0755'

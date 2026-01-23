@@ -1,52 +1,54 @@
 ---
 
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{monit.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ monit.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
-- name: monit installation
-  apt: 
+- name: Monit installation
+  ansible.builtin.apt:
     name:
-    - monit
+      - monit
     state: present
 
-- name: settings.cfg
-  copy:
-    src:  config/settings.cfg
+- name: Settings.cfg
+  ansible.builtin.copy:
+    src: config/settings.cfg
     dest: /etc/monit/conf.d/settings.cfg
     owner: root
     group: root
     mode: '0600'
 
-- name: system.cfg
-  template:
-    src:  system.cfg
+- name: System.cfg
+  ansible.builtin.template:
+    src: system.cfg
     dest: /etc/monit/conf.d/system.cfg
     owner: root
     group: root
     mode: '0600'
 
 - name: Monit service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'monit'
     state: restarted
 
-- name: generate monit certificate
-  shell: /usr/bin/certbot certonly -d {{ monit.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive  
+- name: Generate monit certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ monit.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
   when: not redmine_unsecured
-      
+
 # finish installation with ssl termination
 - name: Template nginx configuration file
-  template:
+  ansible.builtin.template:
     src: monit.conf
     dest: /opt/nginx/conf/server/monit.conf
+    owner: root
+    group: root
+    mode: '0600'
 
 - name: Nginx service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     state: restarted
-

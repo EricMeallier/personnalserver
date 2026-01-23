@@ -1,21 +1,21 @@
 ---
 
-- name: install API calls pre requisites
-  apt: 
+- name: Install API calls pre requisites
+  ansible.builtin.apt:
     name:
-    - jq
-    - curl
+      - jq
+      - curl
     state: present
 
 - name: Get account ID
-  shell: "curl -s \"{{infomaniak.api_url}}1/product?service_name=domain&customer_name={{server.domain.main}}\" --header 'Authorization: Bearer {{infomaniak.token}}' | jq -r '.data[].id'"
-  register: accountID
+  ansible.builtin.shell: "set -o pipefail && curl -s \"{{ infomaniak.api_url }}1/product?service_name=domain&customer_name={{ server.domain.main }}\" --header 'Authorization: Bearer {{ infomaniak.token }}' | jq -r '.data[].id'"
+  register: account_id
 
 - name: Get record ID
-  shell: "curl -s {{infomaniak.api_url}}1/domain/{{accountID.stdout}}/dns/record --header 'Authorization: Bearer {{infomaniak.token}}' | jq -r --arg fqdn {{targetExtension}}.{{server.domain.sub}}{{server.domain.main}} '.data | map(select(.source_idn == $fqdn)) | .[0].id'"
-  register: recordID
-  when: accountID.stderr | length == 0
+  ansible.builtin.shell: "set -o pipefail && curl -s {{ infomaniak.api_url }}1/domain/{{ account_id.stdout }}/dns/record --header 'Authorization: Bearer {{ infomaniak.token }}' | jq -r --arg fqdn {{ update_infomaniak_dns_target_extension }}.{{ server.domain.sub }}{{ server.domain.main }} '.data | map(select(.source_idn == $fqdn)) | .[0].id'"
+  register: record_id
+  when: account_id.stderr | length == 0
 
 - name: Update record
-  shell: "curl -s -X PUT -d target={{targetIP}} -d ttl={{extension.ttl}} '{{infomaniak.api_url}}1/domain/{{accountID.stdout}}/dns/record/{{recordID.stdout}}' --header 'Authorization: Bearer {{infomaniak.token}}'"
-  when: accountID.stderr | length == 0 and recordID.stderr | length == 0
+  ansible.builtin.shell: "set -o pipefail && curl -s -X PUT -d target={{ update_infomaniak_dns_target_ip }} -d ttl={{ extension.ttl }} '{{ infomaniak.api_url }}1/domain/{{ account_id.stdout }}/dns/record/{{ record_id.stdout }}' --header 'Authorization: Bearer {{ infomaniak.token }}'"
+  when: account_id.stderr | length == 0 and record_id.stderr | length == 0

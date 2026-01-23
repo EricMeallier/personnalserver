@@ -1,82 +1,82 @@
 ---
 
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{rustdesk.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ rustdesk.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
 - name: Install rustdesk relay
-  apt:
-    deb: https://github.com/rustdesk/rustdesk-server/releases/download/{{package.version}}/rustdesk-server-hbbr_{{package.version}}_amd64.deb
+  ansible.builtin.apt:
+    deb: https://github.com/rustdesk/rustdesk-server/releases/download/{{ package.version }}/rustdesk-server-hbbr_{{ package.version }}_amd64.deb
 
 - name: Install rustdesk Rendezvous
-  apt:
-    deb: https://github.com/rustdesk/rustdesk-server/releases/download/{{package.version}}/rustdesk-server-hbbs_{{package.version}}_amd64.deb
+  ansible.builtin.apt:
+    deb: https://github.com/rustdesk/rustdesk-server/releases/download/{{ package.version }}/rustdesk-server-hbbs_{{ package.version }}_amd64.deb
 
 - name: Accept only encrypted connections (hbbr)
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /lib/systemd/system/rustdesk-hbbr.service
     regexp: "ExecStart=.*"
     line: "ExecStart=/usr/bin/hbbr -k _"
 
 - name: Accept only encrypted connections (hbbs)
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /lib/systemd/system/rustdesk-hbbs.service
     regexp: "ExecStart=.*"
     line: "ExecStart=/usr/bin/hbbs -r rustdesk.meallier.fr:21116 -k _"
 
 - name: Delayed rustdesk startup (hbbr)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /lib/systemd/system/rustdesk-hbbr.service
     insertafter: '^\[Service\]\n'
     regexp: 'ExecStartPre=.*'
     line: 'ExecStartPre=/bin/sleep 15'
 
 - name: Delayed rustdesk startup (hbbs)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /lib/systemd/system/rustdesk-hbbs.service
     insertafter: '^\[Service\]\n'
     regexp: 'ExecStartPre=.*'
     line: 'ExecStartPre=/bin/sleep 15'
 
-- name: hbbr service reload/start
-  systemd:
+- name: Service hbbr reload/start
+  ansible.builtin.systemd:
     name: 'rustdesk-hbbr'
     daemon_reload: true
     state: started
     enabled: true
 
-- name: hbbs service reload/start
-  systemd:
+- name: Service hbbs reload/start
+  ansible.builtin.systemd:
     name: 'rustdesk-hbbs'
     daemon_reload: true
     state: started
     enabled: true
 
 - name: Ouverture firewall entrant (tcp)
-  ufw:
+  community.general.ufw:
     rule: 'allow'
     proto: 'tcp'
     port: '{{ item }}'
   loop:
-  - '21115'
-  - '21116'
-  - '21117'
-  - '21118'
-  - '21119'
-  - '8000'
+    - '21115'
+    - '21116'
+    - '21117'
+    - '21118'
+    - '21119'
+    - '8000'
 
 - name: Ouverture firewall entrant (udp)
-  ufw:
+  community.general.ufw:
     rule: 'allow'
     proto: 'udp'
     port: '21116'
 
 - name: Deploy public key
-  copy:
+  ansible.builtin.copy:
     content: '{{ rustdesk.key.public }}'
     dest: '/var/lib/rustdesk-server/id_ed25519.pub'
     owner: root
@@ -84,30 +84,32 @@
     mode: '0644'
 
 - name: Deploy private key
-  copy:
+  ansible.builtin.copy:
     content: '{{ rustdesk.key.private }}'
     dest: '/var/lib/rustdesk-server/id_ed25519'
     owner: root
     group: root
     mode: '0644'
 
-- name: rustdesk services restart
-  systemd:
+- name: Services rustdesk restart
+  ansible.builtin.systemd:
     name: '{{ item }}'
     state: restarted
   loop:
-  - rustdesk-hbbr
-  - rustdesk-hbbs
+    - rustdesk-hbbr
+    - rustdesk-hbbs
 
 - name: Slurp hosts key
-  slurp:
+  ansible.builtin.slurp:
     src: /var/lib/rustdesk-server/id_ed25519.pub
   register: slurpfile
 
-- debug: msg="{{ slurpfile['content'] | b64decode }}"
+- name: Debug message
+  ansible.builtin.debug:
+    msg: "{{ slurpfile['content'] | b64decode }}"
 
 - name: Publish the key
-  file:
+  ansible.builtin.file:
     src: /var/lib/rustdesk-server/id_ed25519.pub
     dest: /data/static-files/rustdesk.txt
     state: 'link'

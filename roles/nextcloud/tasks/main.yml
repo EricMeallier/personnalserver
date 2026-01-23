@@ -1,69 +1,74 @@
 ---
 
 - name: Update DNS
-  include_role:
-    name : update_infomaniak_dns
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
   vars:
-    targetExtension : '{{nextcloud.domain.suffix}}'
-    targetIP: '{{ansible_default_ipv4.address}}'
+    update_infomaniak_dns_target_extension: '{{ nextcloud.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
   when: not redmine_unsecured
 
 - name: Is already installed ?
-  stat:
+  ansible.builtin.stat:
     path: "/opt/nextcloud/config/config.php"
   register: already_installed
 
 - name: Is already downloaded ?
-  stat:
-    path: "'/tmp/nextcloud-{{package.version}}.zip'"
+  ansible.builtin.stat:
+    path: "'/tmp/nextcloud-{{ package.version }}.zip'"
   register: nextcloud_zip
 
 - name: Download nextcloud files
-  get_url:
-    url: https://download.nextcloud.com/server/releases/nextcloud-{{package.version}}.zip
-    dest: '/tmp/nextcloud-{{package.version}}.zip'
+  ansible.builtin.get_url:
+    url: https://download.nextcloud.com/server/releases/nextcloud-{{ package.version }}.zip
+    dest: '/tmp/nextcloud-{{ package.version }}.zip'
+    owner: 'nobody'
+    group: 'nogroup'
+    mode: '0644'
   when: not nextcloud_zip.stat.exists is defined or not nextcloud_zip.stat.exists
 
 - name: Backup old installation (config), if needed
-  copy:
+  ansible.builtin.copy:
     remote_src: true
     src: '/opt/nextcloud/config/config.php'
     dest: '/opt/config.php'
   ignore_errors: true
+  register: ignore_errors_register
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Backup old installation (apps), if needed
-  copy:
+  ansible.builtin.copy:
     remote_src: true
     src: '/opt/nextcloud/apps/{{ item }}'
     dest: '/opt/{{ item }}'
     owner: 'nobody'
     group: 'nogroup'
   ignore_errors: true
+  register: ignore_errors_register
   loop: "{{ package.appsToRestore }}"
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Cleanup target folder
-  file:
+  ansible.builtin.file:
     path: '{{ item }}'
     state: absent
   loop:
-  - '/opt/nextcloud-{{package.version}}'
+  - '/opt/nextcloud-{{ package.version }}'
   - '/opt/nextcloud'
 
 - name: Extract nextcloud files into /opt
-  unarchive:
-    src: '/tmp/nextcloud-{{package.version}}.zip'
+  ansible.builtin.unarchive:
+    src: '/tmp/nextcloud-{{ package.version }}.zip'
     dest: /opt
     remote_src: 'yes'
     owner: 'nobody'
     group: 'nogroup'
 
 - name: rename default folder name
-  command: 'mv /opt/nextcloud /opt/nextcloud-{{package.version}}'
+  ansible.builtin.command: 'mv /opt/nextcloud /opt/nextcloud-{{ package.version }}'
 
 - name: link to current version
-  file:
+  ansible.builtin.file:
     src: /opt/nextcloud-{{ package.version }}
     dest: /opt/nextcloud
     state: 'link'
@@ -71,7 +76,7 @@
     group: 'nogroup'
 
 - name: create data directory
-  file:
+  ansible.builtin.file:
     path: /data/nextcloud
     state: directory
     recurse: yes
@@ -79,228 +84,229 @@
     group: 'nogroup'
 
 - name: Restore old configuration, if needed
-  command: mv /opt/config.php /opt/nextcloud/config/config.php
+  ansible.builtin.command: mv /opt/config.php /opt/nextcloud/config/config.php
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Restore old apps, if needed
-  command: mv /opt/{{ item }} /opt/nextcloud/apps/{{ item }}
+  ansible.builtin.command: mv /opt/{{ item }} /opt/nextcloud/apps/{{ item }}
   ignore_errors: true
+  register: ignore_errors_register
   loop: "{{ package.appsToRestore }}"
   when: already_installed.stat.exists is defined and already_installed.stat.exists
 
 - name: Create dedicated database
-  include_role:
-    name : pg_new_fresh_database
+  ansible.builtin.include_role:
+    name: pg_new_fresh_database
   vars:
-    pg_username: '{{ dbschema.nextcloud.username }}'
-    pg_password: '{{ dbschema.nextcloud.password }}'
-    pg_database: '{{ dbschema.nextcloud.database }}'
+    pg_new_fresh_database_pg_username: '{{ dbschema.nextcloud.username }}'
+    pg_new_fresh_database_pg_password: '{{ dbschema.nextcloud.password }}'
+    pg_new_fresh_database_pg_database: '{{ dbschema.nextcloud.database }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Configure database (config/config.php)
-  shell: 
-    cmd: 'sudo -u nobody php{{ php.version }} occ maintenance:install --database "pgsql" --database-name "{{dbschema.nextcloud.database}}" --database-user "{{dbschema.nextcloud.username}}" --database-pass "{{dbschema.nextcloud.password}}" --admin-user "{{nextcloud.admin.username}}" --admin-pass "{{nextcloud.admin.password}}" --data-dir "/data/nextcloud"'
-    chdir: '/opt/nextcloud-{{package.version}}'
+  ansible.builtin.shell:
+    cmd: 'sudo -u nobody php{{ php.version }} occ maintenance:install --database "pgsql" --database-name "{{ dbschema.nextcloud.database }}" --database-user "{{ dbschema.nextcloud.username }}" --database-pass "{{ dbschema.nextcloud.password }}" --admin-user "{{ nextcloud.admin.username }}" --admin-pass "{{ nextcloud.admin.password }}" --data-dir "/data/nextcloud"'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Force owner of config file
-  file:
+  ansible.builtin.file:
     path: '/opt/nextcloud/config/config.php'
     owner: 'nobody'
     group: 'nogroup'
 
 - name: Mise à jour de l'environnement occ
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ upgrade'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure trusted domains (in config/config.php)
-  shell: 
-    cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set trusted_domains 0 --value={{ nextcloud.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+  ansible.builtin.shell:
+    cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set trusted_domains 0 --value={{ nextcloud.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure secure url overwrite (in config/config.php)
-  shell: 
-    cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set overwrite.cli.url --value=http://{{ nextcloud.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+  ansible.builtin.shell:
+    cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set overwrite.cli.url --value=http://{{ nextcloud.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: redmine_unsecured
 
 - name: Configure url overwrite (in config/config.php)
-  shell: 
-    cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set overwrite.cli.url --value=https://{{ nextcloud.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+  ansible.builtin.shell:
+    cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set overwrite.cli.url --value=https://{{ nextcloud.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not redmine_unsecured
 
 - name: Configure memcache local (in config/config.php)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set memcache.local --value=\\OC\\Memcache\\APCu'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure memcache distributed (in config/config.php)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set memcache.distributed --value=\\OC\\Memcache\\Redis'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure memcache locking (in config/config.php)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set memcache.locking --value=\\OC\\Memcache\\Redis'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure memcache redis host (in config/config.php)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set redis.host --value=localhost'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure memcache redis port (in config/config.php)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set redis.port --value=6379'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_smtpmode
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_smtpmode --value=smtp'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_from_address
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_from_address --value={{ mail.smtp.user_from }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_sendmailmode
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_sendmailmode --value=smtp'
-    chdir: '/opt/nextcloud-{{package.version}}'
-    
+    chdir: '/opt/nextcloud-{{ package.version }}'
+
 - name: Configure Mail (in config/config.php) - mail_domain
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_domain --value={{ mail.smtp.user_domain }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_smtphost
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_smtphost --value={{ mail.smtp.address }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_smtpauth
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_smtpauth --value=1'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_smtpname
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_smtpname --value={{ mail.smtp.username }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_smtppassword
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_smtppassword --value={{ mail.smtp.password }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Mail (in config/config.php) - mail_smtpport
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set mail_smtpport --value={{ mail.smtp.port }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure country code (in config/config.php)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ config:system:set default_phone_region --value={{ server.countrycode }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: Configure Maintenance frame (in config/config.php) - maintenance_window_start
-  shell: 
+  ansible.builtin.shell:
     cmd: "sudo -u nobody php{{ php.version }} occ config:system:set maintenance_window_start --type=integer --value=4"
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
 
 - name: nextcloud service reload/start
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     daemon_reload: true
     state: started
     enabled: true
 
 - name: Add basics applications, if fresh install
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ app:install {{ item }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   loop: "{{ package.appsToInstall }}"
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Enable basics applications, if fresh install (drawio not activated by default, for example)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ app:enable {{ item }}'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   loop: "{{ package.appsToInstall }}"
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Configure database (Missing-indices)db:add-missing-primary-keys
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ db:add-missing-indices'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Configure database (Missing-primary keys)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ db:add-missing-primary-keys'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Configure database (Missing-columns)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ db:add-missing-columns'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Configure database (convert-filecache-bigint)
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ db:convert-filecache-bigint'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: Configure repair include expensive
-  shell: 
+  ansible.builtin.shell:
     cmd: 'sudo -u nobody php{{ php.version }} occ maintenance:repair --include-expensive'
-    chdir: '/opt/nextcloud-{{package.version}}'
+    chdir: '/opt/nextcloud-{{ package.version }}'
   when: not already_installed.stat.exists is defined or not already_installed.stat.exists
 
 - name: generate nextcloud certificate
-  shell: /usr/bin/certbot certonly -d {{ nextcloud.domain.suffix }}.{{ server.domain.sub}}{{server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html  --keep-until-expiring --non-interactive  
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ nextcloud.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
   when: not redmine_unsecured
-      
+
 # finish installation with ssl termination
 - name: Template nginx configuration file
-  template:
+  ansible.builtin.template:
     src: nextcloud.conf
     dest: /opt/nginx/conf/server/nextcloud.conf
 
 # Restart services
 - name: Nginx service restart with full configuration
-  systemd:
+  ansible.builtin.systemd:
     name: 'nginx'
     state: restarted
 
 - name: PHP-FPM service restart
-  systemd:
+  ansible.builtin.systemd:
     name: 'php{{ php.version }}-fpm'
     state: restarted
 
 # Whiteboard standalone server
 - name: Whiteboard installation
-  include_tasks: whiteboard.yml
+  ansible.builtin.include_tasks: whiteboard.yml
 
 # Collabora standalone server
 - name: Collabora installation
-  include_tasks: collabora.yml
+  ansible.builtin.include_tasks: collabora.yml
 
 # Scripts and timers
 
 - name: Copy emptyTrash script
-  template:
+  ansible.builtin.template:
     src: nextcloudTrash.sh
     dest: /opt/nextcloudTrash.sh
     mode: 'a+x'
 
 - name: Copy emptyTrash service
-  copy:
+  ansible.builtin.copy:
     src: nextcloudTrash.service
     dest: /etc/systemd/system/nextcloudTrash.service
     owner: root
@@ -308,7 +314,7 @@
     mode: '0644'
 
 - name: Copy emptyTrash timer
-  copy:
+  ansible.builtin.copy:
     src: nextcloudTrash.timer
     dest: /etc/systemd/system/nextcloudTrash.timer
     owner: root
@@ -316,12 +322,12 @@
     mode: '0644'
 
 - name: Enabling emptyTrash timer
-  systemd:
+  ansible.builtin.systemd:
     name: 'nextcloudTrash.timer'
     enabled: yes
 
 - name: Copy cron service
-  template:
+  ansible.builtin.template:
     src: nextcloudCron.service
     dest: /etc/systemd/system/nextcloudCron.service
     owner: root
@@ -329,7 +335,7 @@
     mode: '0644'
 
 - name: Copy cron timer
-  copy:
+  ansible.builtin.copy:
     src: nextcloudCron.timer
     dest: /etc/systemd/system/nextcloudCron.timer
     owner: root
@@ -337,16 +343,16 @@
     mode: '0644'
 
 - name: Enabling emptyCron timer
-  systemd:
+  ansible.builtin.systemd:
     name: 'nextcloudCron.timer'
     enabled: yes
 
 - name: logrotate configuration
-  copy:
+  ansible.builtin.copy:
     src: logrotate
     dest: /etc/logrotate.d/nextcloud
 
 - name: Cleanup installation
-  file:
-    path: '/tmp/nextcloud-{{package.version}}.zip'
+  ansible.builtin.file:
+    path: '/tmp/nextcloud-{{ package.version }}.zip'
     state: 'absent'

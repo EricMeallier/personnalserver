@@ -1,0 +1,86 @@
+---
+
+- name: Update DNS
+  ansible.builtin.include_role:
+    name: update_infomaniak_dns
+  vars:
+    update_infomaniak_dns_target_extension: '{{ kuma.domain.suffix }}'
+    update_infomaniak_dns_target_ip: '{{ ansible_default_ipv4.address }}'
+  when: not redmine_unsecured
+
+- name: Install pre requisites
+  ansible.builtin.apt:
+    name:
+      - git
+    state: 'present'
+
+- name: Ensure dedicated group exists
+  ansible.builtin.group:
+    name: '{{ uptimekuma.group }}'
+    state: present
+
+- name: Ensure dedicated user exists
+  ansible.builtin.user:
+    name: '{{ uptimekuma.user }}'
+    group: '{{ uptimekuma.group }}'
+
+- name: Checkout folder
+  ansible.builtin.file:
+    path: '/opt/uptime-kuma'
+    state: 'directory'
+    owner: '{{ uptimekuma.user }}'
+    group: '{{ uptimekuma.group }}'
+
+- name: Checkout the application
+  ansible.builtin.git:
+    repo: 'https://github.com/louislam/uptime-kuma.git'
+    dest: /opt/uptime-kuma
+    version: '{{ package.version }}'
+  become_user: '{{ uptimekuma.user }}'
+
+- name: Build uptime kuma backend
+  ansible.builtin.shell: /usr/bin/npm ci --omit dev --no-audit && npm run download-dist
+  args:
+    chdir: '/opt/uptime-kuma'
+  become_user: '{{ uptimekuma.user }}'
+
+- name: Build uptime kuma frontent
+  ansible.builtin.shell: /usr/bin/npm run download-dist
+  args:
+    chdir: '/opt/uptime-kuma'
+  become_user: '{{ uptimekuma.user }}'
+
+- name: Install service script
+  ansible.builtin.copy:
+    src: '{{ uptimekuma.service }}.service'
+    dest: /etc/systemd/system/{{ uptimekuma.service }}.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Service reload/start
+  ansible.builtin.systemd:
+    name: '{{ uptimekuma.service }}'
+    daemon_reload: true
+    state: started
+    enabled: true
+
+- name: Generate certificate
+  ansible.builtin.shell: /usr/bin/certbot certonly -d {{ kuma.domain.suffix }}.{{ server.domain.sub }}{{ server.domain.main }} -m {{ server.domain.contact }} --agree-tos --webroot --no-eff-email --webroot-path /opt/nginx/html --keep-until-expiring --non-interactive
+  when: not redmine_unsecured
+
+# finish installation with ssl termination
+- name: Template nginx configuration file
+  ansible.builtin.template:
+    src: kuma.conf
+    dest: /opt/nginx/conf/server/kuma.conf
+
+- name: Nginx service restart with full configuration
+  ansible.builtin.systemd:
+    name: 'nginx'
+    state: restarted
+
+- name: Kuma service restart to clean http parameters
+  ansible.builtin.systemd:
+    name: 'kuma'
+    state: restarted

@@ -1,6 +1,6 @@
 ---
 
 dependencies:
-- nodejs
-- php
-- redis
+- role: nodejs
+- role: php
+- role: redis

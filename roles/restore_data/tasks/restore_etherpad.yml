@@ -1,29 +1,29 @@
 ---
 
 - name: Stop applications
-  systemd:
+  ansible.builtin.systemd:
     name: '{{ service_name }}'
     state: stopped
   loop:
   - 'etherpad'
   loop_control:
     loop_var: service_name
-  ignore_errors: True
+  ignore_errors: true
+  register: ignore_errors_register
 
 - name: Restore database etherpad
-  include_role:
-    name : pg_restore_database
+  ansible.builtin.include_role:
+    name: pg_restore_database
   vars:
-    pg_filename: 'etherpad-last.dmp'
-    pg_username: '{{ dbschema.etherpad.username }}'
-    pg_database: '{{ dbschema.etherpad.database }}'
+    pg_restore_database_pg_filename: 'etherpad-last.dmp'
+    pg_restore_database_pg_username: '{{ dbschema.etherpad.username }}'
+    pg_restore_database_pg_database: '{{ dbschema.etherpad.database }}'
 
 - name: Restart applications
-  systemd:
+  ansible.builtin.systemd:
     name: '{{ service_name }}'
     state: started
   loop:
   - 'etherpad'
   loop_control:
     loop_var: service_name
-

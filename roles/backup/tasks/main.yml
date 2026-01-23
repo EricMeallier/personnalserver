@@ -1,19 +1,19 @@
 ---
 
-- name: install backup pre requisites
-  apt: 
+- name: Install backup pre requisites
+  ansible.builtin.apt:
     name:
-    - jq
+      - jq
     state: present
 
 - name: Backup folder creation
-  file:
+  ansible.builtin.file:
     path: '/backup'
     state: 'directory'
     mode: '0777'
 
 - name: Copy backup script
-  template:
+  ansible.builtin.template:
     src: backup.sh
     dest: /opt/backup.sh
     owner: root
@@ -21,7 +21,7 @@
     mode: '0700'
 
 - name: Copy backup service
-  copy:
+  ansible.builtin.copy:
     src: backup.service
     dest: /etc/systemd/system/backup.service
     owner: root
@@ -29,7 +29,7 @@
     mode: '0644'
 
 - name: Copy backup timer
-  copy:
+  ansible.builtin.copy:
     src: backup.timer
     dest: /etc/systemd/system/backup.timer
     owner: root
@@ -37,6 +37,6 @@
     mode: '0644'
 
 - name: Backup service enabling
-  systemd:
+  ansible.builtin.systemd:
     name: 'backup.timer'
-    enabled: yes
+    enabled: true

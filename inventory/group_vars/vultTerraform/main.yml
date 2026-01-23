@@ -1,7 +1,7 @@
 ---
 
 # vars for environment
-redmine_unsecured: False
+redmine_unsecured: false
 
 firewall_enabled: enabled
 
@@ -13,4 +13,4 @@ server:
     sub: test.
     contact: eric@meallier.fr
   timezone: Europe/Paris
-  countrycode: FR    
+  countrycode: FR

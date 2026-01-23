@@ -1,0 +1,183 @@
+---
+
+- name: Upgrade packages to the latest version
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+    update_cache: true
+    only_upgrade: true
+
+- name: Install socle packages
+  ansible.builtin.apt:
+    name:
+    - unzip
+    - systemd-timesyncd
+    - ufw
+    - acl
+    state: present
+
+- name: Data folder creation
+  ansible.builtin.file:
+    path: '/data'
+    state: 'directory'
+    mode: '0777'
+    owner: root
+    group: root
+
+- name: Disable Root Login and Password (+ security bonus)
+  ansible.builtin.copy:
+    src: '40-disable-root-login.conf'
+    dest: '/etc/ssh/sshd_config.d/40-disable-root-login.conf'
+
+- name: Disable SFTP
+  ansible.builtin.lineinfile:
+    dest: '/etc/ssh/sshd_config'
+    regexp: '^Subsystem.*sftp'
+    line: '# Subsystem       sftp    /usr/lib/openssh/sftp-server'
+
+- name: Disable weak MAC algorithms
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: 'MACs *'
+    line: 'MACs -*md5*,*sha1,*sha1-*,*-64,*-96,*umac-64*'
+
+- name: Sshd service restart with full configuration
+  ansible.builtin.systemd:
+    name: 'sshd'
+    state: restarted
+
+- name: Remove ntp daemon if present
+  ansible.builtin.apt:
+    name:
+    - ntp
+    state: absent
+
+- name: Configuration timezone for the server
+  ansible.builtin.shell:
+    cmd: 'timedatectl set-timezone {{ server.timezone }}'
+
+- name: Configure systemd timesync for Europe pool
+  ansible.builtin.copy:
+    src: 'timesyncd.conf'
+    dest: '/etc/systemd/timesyncd.conf'
+
+- name: Customize message of the day motd
+  ansible.builtin.copy:
+    src: 'motd'
+    dest: '/etc/motd'
+
+- name: Enable Time synchronization
+  ansible.builtin.command: '/usr/bin/timedatectl set-ntp true'
+
+- name: Restart Time synchronization service
+  ansible.builtin.systemd:
+    name: 'systemd-timesyncd'
+    daemon_reload: true
+    state: 'restarted'
+    enabled: true
+
+- name: Install locales
+  ansible.builtin.apt:
+    name:
+    - locales-all
+    state: present
+
+- name: Update locales
+  ansible.builtin.shell: '/usr/sbin/update-locale LANG=en_US.UTF-8 LC_ALL=fr_FR.UTF-8'
+
+- name: Configuration firewall
+  block:
+  - name: Reset firewall
+    community.general.ufw:
+      state: reset
+  - name: Ouverture firewall entrant (ssh, http, https, ssh for gogs)
+    community.general.ufw:
+      rule: 'allow'
+      proto: 'tcp'
+      port: '{{ item }}'
+    loop:
+    - '22'
+    - '80'
+    - '443'
+
+  - name: Ouverture firewall sortant (https, smtps, dns, ntp, http (pour APT), imap(s) + smtp(s) pour portail mail dans nextcloud)
+    community.general.ufw:
+      rule: 'allow'
+      direction: 'out'
+      port: '{{ item }}'
+    loop:
+    - '443'
+    - '587'
+    - '53'
+    - '123'
+    - '80'
+    - '993'
+
+  - name: Ouverture firewall sortant (UDP DHCP)
+    community.general.ufw:
+      rule: 'allow'
+      direction: 'out'
+      port: '{{ item }}'
+    loop:
+    - '67'
+
+  - name: Deny by default for outgoing
+    community.general.ufw:
+      default: 'deny'
+      direction: 'outgoing'
+
+# deactivated due to https://github.com/ansible/ansible/issues/45446
+  always:
+    - name: Configure the kernel to keep connections alive when enabling the firewall
+      ansible.posix.sysctl:
+        name: net.netfilter.nf_conntrack_tcp_be_liberal
+        value: 1
+        state: present
+        sysctl_set: yes
+        reload: yes
+    - name: UFW enabled/disabled - {{ firewall_enabled }}
+      community.general.ufw:
+        state: '{{ firewall_enabled }}'
+
+# certbot installation
+- name: Install certobot with dependencies
+  ansible.builtin.apt:
+    name:
+      - certbot
+    state: present
+  when: not redmine_unsecured
+
+- name: Create acme challenge folder
+  ansible.builtin.file:
+    path: /opt/nginx/html/.well-known/acme-challenge
+    state: directory
+    recurse: yes
+    owner: nobody
+    group: nogroup
+    mode: u+rxw,g+rw,o+rw
+  when: not redmine_unsecured
+
+- name: Check is DH already exists
+  ansible.builtin.stat:
+    path: /etc/redmine.dhparam.pem
+  register: dh_exists
+  when: not redmine_unsecured
+
+# could take long - around 10 minutes on a vultr VPS
+- name: Generate Secure Diffie-Hellman
+  ansible.builtin.shell: /usr/bin/openssl dhparam -out /etc/redmine.dhparam.pem 4096
+  when: not redmine_unsecured and ( not dh_exists.stat.exists is defined or not dh_exists.stat.exists)
+
+- name: Create letsencrypt hook scripts folder
+  ansible.builtin.file:
+    path: /etc/letsencrypt/renewal-hooks/deploy
+    state: directory
+    recurse: yes
+  when: not redmine_unsecured
+
+- name: Certbot deploy hook
+  ansible.builtin.copy:
+    src: restartNginx.sh
+    dest: /etc/letsencrypt/renewal-hooks/deploy/restartNginx.sh
+    mode: '0644'
+  when: not redmine_unsecured

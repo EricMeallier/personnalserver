@@ -1,5 +1,5 @@
 ---
 
 dependencies:
-  - nodejs
-  - redis
+  - role: nodejs
+  - role: redis

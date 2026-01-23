@@ -1,0 +1,60 @@
+---
+
+- name: Install check pre requisites
+  ansible.builtin.apt:
+    name:
+      - mutt
+    state: present
+
+- name: Mail personnal folder
+  ansible.builtin.file:
+    path: '/root/mail'
+    state: 'directory'
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Mail global spool folder
+  ansible.builtin.file:
+    path: '/var/spool/mail/'
+    state: 'directory'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configuraiton mutt
+  ansible.builtin.template:
+    src: muttrc
+    dest: /root/.muttrc
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check version script
+  ansible.builtin.template:
+    src: checkVersion.sh
+    dest: /opt/checkVersion.sh
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Check version service
+  ansible.builtin.copy:
+    src: checkVersion.service
+    dest: /etc/systemd/system/checkVersion.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check version timer
+  ansible.builtin.copy:
+    src: checkVersion.timer
+    dest: /etc/systemd/system/checkVersion.timer
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Check version enabling
+  ansible.builtin.systemd:
+    name: 'checkVersion.timer'
+    enabled: true
