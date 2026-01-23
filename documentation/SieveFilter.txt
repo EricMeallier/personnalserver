@@ -1,0 +1,19 @@
+require ["fileinto"];
+
+if address :is ["From"] "bercy-infos-contact@lettres-infos.bercy.gouv.fr" {
+fileinto "VeilleNews";
+}
+
+elsif address :contains ["From"] "gard.cci.fr" {
+fileinto "VeilleNews";
+}
+
+elsif address :contains ["From"] "cip-paca.org" {
+fileinto "VeilleNews";
+}
+elsif address :contains ["From"] "vaucluse.cci.fr" {
+fileinto "VeilleNews";
+}
+elsif address :contains ["From"] "occitanie.cci.fr" {
+fileinto "VeilleNews";
+}
