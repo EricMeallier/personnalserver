@@ -71,28 +71,39 @@ rm -f ${targetDir}/kuma-${timestamp=}.db.gz
 ##########################################################
 # Application backups
 
-# redmine
+# redmine phase 1
 tar zcvf ${targetDir}/redmine-${timestamp=}-files.tar.gz /data/redmine-files
 systemctl start nginx
-curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/redmine-${timestamp=}-files.tar.gz
-rm -f ${targetDir}/redmine-${timestamp=}-files.tar.gz
 
-## gitea
+## gitea phase 1
 tar zcvf ${targetDir}/gitea-${timestamp=}-data.tar.gz /data/gitea
 systemctl start gitea
-curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/gitea-${timestamp=}-data.tar.gz
+
+## gogs phase 1
+tar cvf ${targetDir}/gogs-${timestamp=}-data.tar /data/gogs-repositories
+systemctl start gogs
+
+# nextcloud phase 1
+tar cvf ${targetDir}/nextcloud-${timestamp=}-data.tar /data/nextcloud
+systemctl start php8.4-fpm.service
+systemctl restart nginx
+
+############################## All applications are restarted, now compressing and tranfering big files
+
+# redmine phase 2
+curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid=5436346935" -F update=@${targetDir}/redmine-${timestamp=}-files.tar.gz
+rm -f ${targetDir}/redmine-${timestamp=}-files.tar.gz
+
+## gitea phase 2
+curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid=5436346935" -F update=@${targetDir}/gitea-${timestamp=}-data.tar.gz
 rm -f ${targetDir}/gitea-${timestamp=}-data.tar.gz
 
-## gogs
-tar zcvf ${targetDir}/gogs-${timestamp=}-data.tar.gz /data/gogs-repositories
-systemctl start gogs
-curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/gogs-${timestamp=}-data.tar.gz
+## gogs phase 2
+gzip -9 ${targetDir}/gogs-${timestamp=}-data.tar
+curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid=5436346935" -F update=@${targetDir}/gogs-${timestamp=}-data.tar.gz
 rm -f ${targetDir}/gogs-${timestamp=}-data.tar.gz
 
-# nextcloud
-tar cvf ${targetDir}/nextcloud-${timestamp=}-data.tar /data/nextcloud
-systemctl start php{{ php.version }}-fpm.service
-systemctl restart nginx
+# nextcloud phase 2
 gzip -9 ${targetDir}/nextcloud-${timestamp=}-data.tar
-curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid={{ pcloud.folder.id }}" -F update=@${targetDir}/nextcloud-${timestamp=}-data.tar.gz
+curl -X POST "https://eapi.pcloud.com/uploadfile?auth=${auth}&folderid=5436346935" -F update=@${targetDir}/nextcloud-${timestamp=}-data.tar.gz
 rm -f ${targetDir}/nextcloud-${timestamp=}-data.tar.gz
