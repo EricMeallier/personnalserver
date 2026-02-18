@@ -17,3 +17,23 @@ fileinto "VeilleNews";
 elsif address :contains ["From"] "occitanie.cci.fr" {
 fileinto "VeilleNews";
 }
+
+
+elsif address :contains ["From"] "linkedin.com" {
+fileinto "OffresEmploi";
+}
+elsif address :contains ["From"] "hellowork.com" {
+fileinto "OffresEmploi";
+}
+elsif address :contains ["From"] "apec.fr" {
+fileinto "OffresEmploi";
+}
+elsif address :contains ["From"] "cadremploi.fr" {
+fileinto "OffresEmploi";
+}
+elsif address :contains ["From"] "meteojob.com" {
+fileinto "OffresEmploi";
+}
+elsif address :contains ["From"] "glassdoor.com" {
+fileinto "OffresEmploi";
+}
