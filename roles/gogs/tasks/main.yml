@@ -45,7 +45,7 @@
 
 - name: Download gogs files
   ansible.builtin.get_url:
-    url: https://dl.gogs.io/{{ package.version }}/gogs_{{ package.version }}_linux_amd64.zip
+    url: https://github.com/gogs/gogs/releases/download/v{{ package.version }}/gogs_v{{ package.version }}_linux_amd64.tar.gz
     dest: '/tmp/gogs-{{ package.version }}.zip'
     owner: root
     group: root
