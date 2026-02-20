@@ -7,13 +7,14 @@
     update_cache: true
     only_upgrade: true
 
-- name: Install socle packages
+- name: Install socle packages (zip, ntp, acl and last command)
   ansible.builtin.apt:
     name:
     - unzip
     - systemd-timesyncd
     - ufw
     - acl
+    - wtmpdb
     state: present
 
 - name: Data folder creation
