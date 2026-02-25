@@ -114,7 +114,7 @@
     state: 'directory'
     owner: gogs
     group: gogs
-    mode: '0600'
+    mode: '0700'
 
 - name: Restore old configuration, if needed
   ansible.builtin.command: mv /opt/app.ini /opt/gogs/custom/conf/app.ini
