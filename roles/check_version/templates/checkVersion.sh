@@ -60,7 +60,7 @@ NODEJS_VERSION=`curl -sL https://github.com/nodejs/node/tags | grep "tag\/v22\.[
 check_delta "NODEJS (apt)" $NODEJS_CURRENT_VERSION $NODEJS_VERSION
 
 RUBY_CURRENT_VERSION=`ls -l /usr/local/rvm/gems| grep 'ruby-[0-9]*\.[0-9]*\.[0-9]*$' | sed -e 's/.*ruby-\(.*\)/\1/' | sort --version-sort | tail -1`
-RUBY_VERSION=`curl -sL https://www.ruby-lang.org/en/downloads/releases/ | grep 'Ruby 3\.3\.[0-9]*<' | sed -e 's/.*Ruby \([0-9]*\.[0-9]*\.[0-9]*\)<.*/\1/' | sort --version-sort | tail -1`
+RUBY_VERSION=`curl -sL https://www.ruby-lang.org/en/downloads/releases/ | grep 'Ruby 3\.4\.[0-9]*<' | sed -e 's/.*Ruby \([0-9]*\.[0-9]*\.[0-9]*\)<.*/\1/' | sort --version-sort | tail -1`
 check_delta "RUBY" $RUBY_CURRENT_VERSION $RUBY_VERSION
 
 # NGINX_CURRENT_VERSION=`/opt/nginx/sbin/nginx -v 2>&1 | sed -e 's/nginx version: nginx\/\([0-9]\.[0-9]*\.[0-9]*\)$/\1/'`
@@ -70,7 +70,7 @@ check_delta "RUBY" $RUBY_CURRENT_VERSION $RUBY_VERSION
 # check_delta "Postgresql (apt)" 17 17
 # check_delta "PHP (apt)" 8.4 8.4
 
-UPTIMEKUMA_CURRENT_VERSION='2.2.0'
+UPTIMEKUMA_CURRENT_VERSION='2.2.1'
 UPTIMEKUMA_VERSION=`curl -sL https://github.com/louislam/uptime-kuma/tags | grep "tags/[0-9]*\.[0-9]*\.[0-9]*\." | sed -e "s/.*tags\/\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/" | sort --version-sort | tail -1`
 check_delta "UptimeKuma" $UPTIMEKUMA_CURRENT_VERSION $UPTIMEKUMA_VERSION
 
