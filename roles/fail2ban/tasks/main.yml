@@ -4,6 +4,7 @@
   ansible.builtin.apt:
     name:
     - fail2ban
+    - nftables
     state: present
 
 - name: Active nginx supervision
@@ -17,6 +18,12 @@
     dest: /etc/fail2ban/jail.conf
     regexp: "^backend = auto"
     line: "backend = systemd"
+
+- name: Exclude local addresses
+  ansible.builtin.lineinfile:
+    dest: /etc/fail2ban/jail.conf
+    regexp: "^#ignoreip=.*"
+    line: "ignoreip = 127.0.0.1/8 ::1"
 
 - name: Modify rights access to allow netdata supervision
   ansible.builtin.shell: chmod o+r /var/run/fail2ban/fail2ban.sock
