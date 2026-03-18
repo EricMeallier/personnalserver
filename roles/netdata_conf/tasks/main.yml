@@ -26,9 +26,9 @@
   ansible.builtin.template:
     src: phpfpm.conf
     dest: /etc/netdata/go.d/phpfpm.conf
-    name: 'netdata'
-    groups: 'nogroup'
-    mode: '0600'
+    owner: netdata
+    group: nogroup
+    mode: '0600'    
 
 - name: Add netdata to nogroup to use fpm local socket
   ansible.builtin.user:
@@ -44,3 +44,4 @@
   loop:
     - 'nginx'
     - 'php{{ php.version }}-fpm'
+    - netdata
