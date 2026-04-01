@@ -1,0 +1,11 @@
+# Purge Journalctl logs
+
+```
+sudo journalctl --vacuum-time=2d
+```
+
+# Monitor next timer starts
+
+```
+systemctl list-timers --all
+```
