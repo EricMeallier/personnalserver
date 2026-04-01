@@ -326,6 +326,33 @@
     name: 'nextcloudTrash.timer'
     enabled: yes
 
+- name: Copy App Auto Update script
+  ansible.builtin.template:
+    src: nextcloudAppAutoUpdate.sh
+    dest: /opt/nextcloudAppAutoUpdate.sh
+    mode: 'a+x'
+
+- name: Copy App Auto Update service
+  ansible.builtin.copy:
+    src: nextcloudTrash.service
+    dest: /etc/systemd/system/nextcloudCronAppAutoUpdate.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Copy App Auto Update timer
+  ansible.builtin.copy:
+    src: nextcloudTrash.timer
+    dest: /etc/systemd/system/nextcloudCronAppAutoUpdate.timer
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enabling App Auto Update timer
+  ansible.builtin.systemd:
+    name: 'nextcloudCronAppAutoUpdate.timer'
+    enabled: yes
+
 - name: Copy cron service
   ansible.builtin.template:
     src: nextcloudCron.service
