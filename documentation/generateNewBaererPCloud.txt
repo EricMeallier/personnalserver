@@ -1,0 +1,11 @@
+
+# Generate an authorization code:
+open: https://my.pcloud.com/oauth2/authorize?client_id={{ pcloud.client_id }}&response_type=code
+
+
+# Generate an access token (bearer) from the authorization code
+
+echo "export autorization_code=XXX"
+echo "curl -s https://eapi.pcloud.com/oauth2_token?client_id={{ pcloud.client_id }}&client_secret={{ pcloud.client_secret }}&code=${autorization_code} | jq -r '.access_token'"
+
+# Put the access token in the secrets of Ansible

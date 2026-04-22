@@ -6,20 +6,16 @@
     - jq
     state: present
 
-- name: Getting auth token
-  ansible.builtin.shell: set -o pipefail && curl -s "https://eapi.pcloud.com/userinfo?getauth=1&username={{ pcloud.username }}&password={{ pcloud.password }}" | jq -r '.auth'
-  register: auth
-
 - name: Getting fileid
-  ansible.builtin.shell: set -o pipefail && curl -s -X GET "https://eapi.pcloud.com/listfolder?auth={{ auth.stdout }}&folderid={{ pcloud.folder.id }}" | jq -r --arg filename "{{ pcloud_restore_file_filename }}" '.metadata.contents[] | select(.name | test($filename)) | .fileid'
+  ansible.builtin.shell: set -o pipefail && curl --oauth2-bearer {{pcloud.bearer}} -s -X GET "https://eapi.pcloud.com/listfolder?folderid={{ pcloud.folder.id }}" | jq -r --arg filename "{{ pcloud_restore_file_filename }}" '.metadata.contents[] | select(.name | test($filename)) | .fileid'
   register: fileid
 
 - name: Getting path of file
-  ansible.builtin.shell: set -o pipefail && curl -X GET "https://eapi.pcloud.com/getfilelink?auth={{ auth.stdout }}&fileid={{ fileid.stdout }}" | jq -r '.path'
+  ansible.builtin.shell: set -o pipefail && curl --oauth2-bearer {{pcloud.bearer}} -X GET "https://eapi.pcloud.com/getfilelink?fileid={{ fileid.stdout }}" | jq -r '.path'
   register: path
 
 - name: Getting host hosting the file
-  ansible.builtin.shell: set -o pipefail && curl -X GET "https://eapi.pcloud.com/getfilelink?auth={{ auth.stdout }}&fileid={{ fileid.stdout }}" | jq -r '.hosts[0]'
+  ansible.builtin.shell: set -o pipefail && curl --oauth2-bearer {{pcloud.bearer}} -X GET "https://eapi.pcloud.com/getfilelink?fileid={{ fileid.stdout }}" | jq -r '.hosts[0]'
   register: host
 
 - name: Declaring UrlToDownload
