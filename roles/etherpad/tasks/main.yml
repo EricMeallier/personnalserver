@@ -9,7 +9,7 @@
 
 - name: Is already installed ?
   ansible.builtin.stat:
-    path: "/opt/etherpad-lite/settings.json"
+    path: "/opt/etherpad/settings.json"
   register: already_installed
 
 - name: Create dedicated database
@@ -33,7 +33,7 @@
 
 - name: Download etherpad files
   ansible.builtin.get_url:
-    url: https://github.com/ether/etherpad-lite/archive/{{ package.version }}.zip
+    url: https://github.com/ether/etherpad/archive/{{ package.version }}.zip
     dest: '/tmp/etherpad-{{ package.version }}.zip'
     timeout: 30
     owner: root
@@ -50,8 +50,8 @@
 
 - name: Link to current version
   ansible.builtin.file:
-    src: /opt/etherpad-lite-{{ package.version }}
-    dest: /opt/etherpad-lite
+    src: /opt/etherpad-{{ package.version }}
+    dest: /opt/etherpad
     state: 'link'
     owner: 'etherpad'
     group: 'etherpad'
@@ -59,18 +59,18 @@
 - name: Copy database configuration file
   ansible.builtin.template:
     src: settings.json
-    dest: /opt/etherpad-lite/settings.json
+    dest: /opt/etherpad/settings.json
     owner: etherpad
     group: etherpad
     mode: '0644'
 
 - name: Retrieve dependencies
   ansible.builtin.shell:
-    cmd: bash /opt/etherpad-lite/bin/installDeps.sh
-    chdir: '/opt/etherpad-lite'
+    cmd: bash /opt/etherpad/bin/installDeps.sh
+    chdir: '/opt/etherpad'
 
 - name: Etherpad owner for node_modules
-  ansible.builtin.shell: chown -R etherpad:etherpad /opt/etherpad-lite-{{ package.version }}
+  ansible.builtin.shell: chown -R etherpad:etherpad /opt/etherpad-{{ package.version }}
 
 - name: Install etherpad service script
   ansible.builtin.copy:

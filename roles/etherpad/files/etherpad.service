@@ -8,8 +8,8 @@ After=postgresql.service
 Type=simple
 User=etherpad
 Group=etherpad
-WorkingDirectory=/opt/etherpad-lite
-ExecStart=/opt/etherpad-lite/bin/fastRun.sh
+WorkingDirectory=/opt/etherpad
+ExecStart=/opt/etherpad/bin/fastRun.sh
 Restart=always
 Environment=NODE_ENV=production
 Environment=ETHERPAD_PRODUCTION=1

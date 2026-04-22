@@ -43,8 +43,8 @@ check_delta "Whiteboard" $WHITEBOARD_CURRENT_VERSION $WHITEBOARD_VERSION
 #PICOCMS_VERSION=`curl -sL https://github.com/picocms/Pico/releases/latest | grep "tag/v*" | sed -e "s/.*tag\/v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/"`
 #check_delta "PicoCMS" $PICOCMS_CURRENT_VERSION $PICOCMS_VERSION
 
-ETHERPAD_CURRENT_VERSION=`ls -l /opt/etherpad-lite | sed -e 's/.*etherpad-lite-\(.*\)/\1/'`
-ETHERPAD_VERSION=`curl -sL https://github.com/ether/etherpad-lite/releases | grep "tag/v[0-9]*\.[0-9]*\.[0-9]*\"" | sed -e "s/.*tag\/v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/" | sort --version-sort | tail -1`
+ETHERPAD_CURRENT_VERSION=`ls -l /opt/etherpad | sed -e 's/.*etherpad-\(.*\)/\1/'`
+ETHERPAD_VERSION=`curl -sL https://github.com/ether/etherpad/releases | grep "tag/v[0-9]*\.[0-9]*\.[0-9]*\"" | sed -e "s/.*tag\/v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/" | sort --version-sort | tail -1`
 check_delta "EtherPad" $ETHERPAD_CURRENT_VERSION $ETHERPAD_VERSION
 
 RUSTDESK_CURRENT_VERSION=`apt show rustdesk-server-hbbr 2> /dev/null | grep Version: | sed -e "s/Version: \([0-9]*\.[0-9]*\.[0-9]*\).*/\1/"`
