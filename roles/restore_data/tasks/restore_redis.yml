@@ -5,7 +5,6 @@
     name: '{{ service_name }}'
     state: stopped
   loop:
-  - 'ethercalc.service'
   - 'redis-server'
   loop_control:
     loop_var: service_name
@@ -33,6 +32,5 @@
     state: started
   loop:
   - 'redis-server'
-  - 'ethercalc.service'
   loop_control:
     loop_var: service_name

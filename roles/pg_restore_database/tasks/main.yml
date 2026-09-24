@@ -16,7 +16,7 @@
   become_user: 'postgres'
 
 - name: Import database
-  ansible.builtin.shell: psql {{ pg_restore_database_pg_database }} < /tmp/{{ pg_restore_databas_epg_filename }}
+  ansible.builtin.shell: psql {{ pg_restore_database_pg_database }} < /tmp/{{ pg_restore_database_pg_filename }}
   become_user: 'postgres'
 
 - name: Remove imported file
