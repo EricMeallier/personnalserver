@@ -13,7 +13,6 @@
     - gogs
     - gitea
     - etherpad
-    - ethercalc
     - spliit
     - fail2ban
     - backup
@@ -26,4 +25,3 @@
     - rustdesk
     - netdata
     - netdata_conf
-#    - keycloak
