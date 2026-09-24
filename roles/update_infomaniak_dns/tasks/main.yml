@@ -7,15 +7,10 @@
       - curl
     state: present
 
-- name: Get account ID
-  ansible.builtin.shell: "set -o pipefail && curl -s \"{{ infomaniak.api_url }}1/product?service_name=domain&customer_name={{ server.domain.main }}\" --header 'Authorization: Bearer {{ infomaniak.token }}' | jq -r '.data[].id'"
-  register: account_id
-
 - name: Get record ID
-  ansible.builtin.shell: "set -o pipefail && curl -s {{ infomaniak.api_url }}1/domain/{{ account_id.stdout }}/dns/record --header 'Authorization: Bearer {{ infomaniak.token }}' | jq -r --arg fqdn {{ update_infomaniak_dns_target_extension }}.{{ server.domain.sub }}{{ server.domain.main }} '.data | map(select(.source_idn == $fqdn)) | .[0].id'"
+  ansible.builtin.shell: "set -o pipefail && curl -s {{ infomaniak.api_url }}2/zones/{{ server.domain.sub }}{{ server.domain.main }}/records --header 'Authorization: Bearer {{ infomaniak.token }}' | jq -r --arg record {{ update_infomaniak_dns_target_extension }} '.data | map(select(.source == $record)) | .[0].id'"
   register: record_id
-  when: account_id.stderr | length == 0
 
 - name: Update record
-  ansible.builtin.shell: "set -o pipefail && curl -s -X PUT -d target={{ update_infomaniak_dns_target_ip }} -d ttl={{ extension.ttl }} '{{ infomaniak.api_url }}1/domain/{{ account_id.stdout }}/dns/record/{{ record_id.stdout }}' --header 'Authorization: Bearer {{ infomaniak.token }}'"
-  when: account_id.stderr | length == 0 and record_id.stderr | length == 0
+  ansible.builtin.shell: "set -o pipefail && curl -s -X PUT -d target={{ update_infomaniak_dns_target_ip }} -d ttl={{ extension.ttl }} '{{ infomaniak.api_url }}2/zones/{{ server.domain.sub }}{{ server.domain.main }}/records/{{ record_id.stdout }}' --header 'Authorization: Bearer {{ infomaniak.token }}'"
+  when: record_id.stderr | length == 0
