@@ -88,5 +88,5 @@
 
 - name: Cleanup installation
   ansible.builtin.file:
-    path: '/tmp/etherpad-{{ package.version }}.zip'
+    path: '/tmp/etherpad-{{ package.version }}.deb'
     state: 'absent'
