@@ -1,7 +1,9 @@
 # Purge Journalctl logs
 
 ```
-sudo journalctl --vacuum-time=2d
+sudo journalctl --disk-usage
+sudo journalctl --flush --rotate --vacuum-time=2h
+sudo journalctl --disk-usage
 ```
 
 # Monitor next timer starts
