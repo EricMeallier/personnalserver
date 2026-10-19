@@ -2,4 +2,4 @@
 
 package:
   gems:
-    passenger: 6.2.0
+    passenger: 6.2.1
