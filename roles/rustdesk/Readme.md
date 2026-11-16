@@ -5,9 +5,9 @@
 
 ## Installer le logiciel:
 
-    WINDOWS: https://github.com/rustdesk/rustdesk/releases/download/1.5.1/rustdesk-1.5.1-x86_64.exe + téléchargement + installation
+    WINDOWS: https://github.com/rustdesk/rustdesk/releases/download/1.5.3/rustdesk-1.5.3-x86_64.exe + téléchargement + installation
 
-    LINUX: https://github.com/rustdesk/rustdesk/releases/download/1.5.1/rustdesk-1.5.1-x86_64.deb + téléchargement + installation
+    LINUX: https://github.com/rustdesk/rustdesk/releases/download/1.5.3/rustdesk-1.5.3-x86_64.deb + téléchargement + installation
 
 ## Lancer le logiciel rustdesk
 
